@@ -38,7 +38,6 @@ var DEF={
   mShow:true,mLayers:3,mHeight:100,mDrift:30,
   cShow:true,cCount:3,cSize:100,cSpeed:12,cOpacity:80,
   bShow:true,bCount:3,bSpan:14,bSpeed:45,bFlap:3,
-  hue:30,sat:0,bright:0,contrast:100,
   speed:100,variation:30,easing:'Linear',cycle:3.2
 };
 var prm=Object.assign({},DEF);
@@ -51,11 +50,8 @@ var EASE={
 /* eased clock: within each scene-change cycle the drift follows the chosen curve,
    covering the same distance per cycle as Linear */
 function eased(t){var P=prm.cycle,n=Math.floor(t/P);return P*(n+EASE[prm.easing](t/P-n))}
-/* gray value 0–1 -> tinted colour using the Color controls */
-function tone(v){
-  v=clamp((v-.5)*prm.contrast/100+.5+prm.bright/100,0,1);
-  return 'hsl('+prm.hue+','+prm.sat+'%,'+(v*100).toFixed(1)+'%)';
-}
+/* gray value 0 (black) – 1 (white) -> CSS colour; the scene stays grayscale like the studies */
+function tone(v){v=Math.round(clamp(v,0,1)*255);return 'rgb('+v+','+v+','+v+')'}
 function rng(seed){var s=seed;return function(){s=(s*9301+49297)%233280;return s/233280}}
 /* ridge(): Study 02's procedural silhouette; 16 points repeat every 680 so the 1360-wide path wraps seamlessly */
 function ridge(r,base,amp,sharp){
@@ -471,11 +467,6 @@ var GROUPS=[
     {key:'bSpan',label:'Wingspan',min:6,max:30,step:1,unit:'px'},
     {key:'bSpeed',label:'Flight speed',min:10,max:150,step:1,unit:'px/s',motion:true},
     {key:'bFlap',label:'Wingbeat',min:.5,max:6,step:.5,unit:'Hz',motion:true}]},
-  {name:'Color',items:[
-    {key:'hue',label:'Hue',min:0,max:360,step:1,unit:'°'},
-    {key:'sat',label:'Saturation',min:0,max:100,step:1,unit:'%',note:'0 % keeps the studies’ grayscale'},
-    {key:'bright',label:'Brightness',min:-40,max:40,step:1,unit:'%'},
-    {key:'contrast',label:'Contrast',min:50,max:150,step:5,unit:'%'}]},
   {name:'Speed & motion',items:[
     {key:'speed',label:'Overall speed',min:0,max:300,step:5,unit:'%',motion:true},
     {key:'variation',label:'Speed variation',min:0,max:100,step:5,pre:'±',unit:'%',motion:true,note:'Random spread per mountain layer, cloud and bird'},
