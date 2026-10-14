@@ -8,6 +8,22 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<aside id="panel" class="panel" aria-label="Step 2 background controls">
+  <button id="panelToggle" class="ptoggle" type="button" aria-expanded="true" aria-controls="panelBody">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+    <span>Background controls</span>
+  </button>
+  <div id="panelBody" class="pbody">
+    <p class="pintro">Live settings for the Step 2 scene. Changes also show behind the Step 1 frame. Photos that are already captured stay as they were.</p>
+    <div class="pgroups"></div>
+    <div class="pactions">
+      <button id="pReset" class="pbtn" type="button" title="Restart the background animation with the current settings">Reset state</button>
+      <button id="pDefaults" class="pbtn" type="button" title="Put every control back to its default value">Restore defaults</button>
+      <button id="copyPrompt" class="pbtn primary" type="button" title="Copy the current values as a prompt you can paste">Copy as prompt</button>
+    </div>
+  </div>
+</aside>
+
 <main class="wrap">
   <header class="head">
     <h1>Capture &amp; Pin</h1>
@@ -17,10 +33,6 @@
   <div class="stage" id="stage" tabindex="0" role="application" aria-label="Black screen. Pinch out with two fingers, scroll, or press plus to open the camera frame.">
     <svg id="svg" viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
-        <linearGradient id="skyDay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d9d9"/><stop offset=".6" stop-color="#b4b4b4"/><stop offset="1" stop-color="#8d8d8d"/></linearGradient>
-        <linearGradient id="skyDusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8a8a"/><stop offset=".7" stop-color="#c4c4c4"/><stop offset="1" stop-color="#e2e2e2"/></linearGradient>
-        <linearGradient id="skyNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151515"/><stop offset="1" stop-color="#3a3a3a"/></linearGradient>
-        <linearGradient id="skyFog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8e8e8"/><stop offset="1" stop-color="#c2c2c2"/></linearGradient>
         <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity=".35"/></filter>
       </defs>
       <rect width="680" height="470" fill="#000"/>

@@ -30,9 +30,32 @@ function focusInStage(el){
 }
 
 /* ------------------------------------------------------------------ */
-/* World: drifting landscape from Study 02, now randomly generated      */
+/* World: drifting landscape from Study 02, now randomly generated.     */
+/* Every visual and motion property reads from prm (the control panel). */
 /* ------------------------------------------------------------------ */
-var world=$('world'),scenes=[],lastType=-1,moving=true;
+var world=$('world'),scenes=[],lastType=-1,moving=true,gid=0;
+var DEF={
+  mShow:true,mLayers:3,mHeight:100,mDrift:30,
+  cShow:true,cCount:3,cSize:100,cSpeed:12,cOpacity:80,
+  bShow:true,bCount:3,bSpan:14,bSpeed:45,bFlap:3,
+  hue:30,sat:0,bright:0,contrast:100,
+  speed:100,variation:30,easing:'Linear',cycle:3.2
+};
+var prm=Object.assign({},DEF);
+var EASE={
+  'Linear':function(x){return x},
+  'Ease In':function(x){return x*x*x},
+  'Ease Out':function(x){return 1-Math.pow(1-x,3)},
+  'Ease In-Out':function(x){return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
+};
+/* eased clock: within each scene-change cycle the drift follows the chosen curve,
+   covering the same distance per cycle as Linear */
+function eased(t){var P=prm.cycle,n=Math.floor(t/P);return P*(n+EASE[prm.easing](t/P-n))}
+/* gray value 0–1 -> tinted colour using the Color controls */
+function tone(v){
+  v=clamp((v-.5)*prm.contrast/100+.5+prm.bright/100,0,1);
+  return 'hsl('+prm.hue+','+prm.sat+'%,'+(v*100).toFixed(1)+'%)';
+}
 function rng(seed){var s=seed;return function(){s=(s*9301+49297)%233280;return s/233280}}
 /* ridge(): Study 02's procedural silhouette; 16 points repeat every 680 so the 1360-wide path wraps seamlessly */
 function ridge(r,base,amp,sharp){
@@ -47,50 +70,102 @@ function wave(r,base,amp){
   for(x=0;x<=1360;x+=8.5)d+=' L'+x+' '+f1(base+amp*Math.sin(x/wl*6.283+ph));
   return d+' L1360 '+H+' Z';
 }
+/* gray values (0 black – 1 white) per scene kind */
 var TYPES=[
-  {sky:'skyDay', body:'sun', r:[24,38],y:[70,150], fills:['#8d8d8d','#6e6e6e','#4f4f4f'],base:[290,345,405],amp:[60,45,35]},
-  {sky:'skyDusk',body:'sun', r:[44,60],y:[230,280],fills:['#5a5a5a','#3f3f3f','#262626'],base:[300,350,410],amp:[55,40,30]},
-  {sky:'skyNight',body:'moon',r:[18,26],y:[60,130],fills:['#3a3a3a','#2a2a2a','#1a1a1a'],base:[300,350,410],amp:[60,45,35],stars:true},
-  {sky:'skyFog', body:'sun', r:[22,34],y:[80,160],fills:['#9a9a9a','#7a7a7a','#5a5a5a'],base:[300,350,410],amp:[6,9,12],sea:true},
-  {sky:'skyDay', body:'sun', r:[20,30],y:[60,120],fills:['#a3a3a3','#727272','#454545'],base:[320,370,420],amp:[150,100,60],sharp:true}
+  {name:'day',  sky:[.85,.71,.55],body:'sun', bodyV:.96,r:[24,38],y:[70,150], fills:[.55,.43,.31],base:[290,345,405],amp:[60,45,35],cloud:.97,bird:.2},
+  {name:'dusk', sky:[.54,.77,.89],body:'sun', bodyV:.97,r:[44,60],y:[230,280],fills:[.35,.25,.15],base:[300,350,410],amp:[55,40,30],cloud:.88,bird:.15},
+  {name:'night',sky:[.08,.16,.23],body:'moon',bodyV:.9, r:[18,26],y:[60,130], fills:[.23,.165,.10],base:[300,350,410],amp:[60,45,35],cloud:.42,bird:.62,stars:true},
+  {name:'sea',  sky:[.91,.84,.76],body:'sun', bodyV:.96,r:[22,34],y:[80,160], fills:[.6,.48,.35],base:[300,350,410],amp:[6,9,12],cloud:.98,bird:.25,sea:true},
+  {name:'peaks',sky:[.85,.71,.55],body:'sun', bodyV:.96,r:[20,30],y:[60,120], fills:[.64,.45,.27],base:[320,370,420],amp:[150,100,60],cloud:.97,bird:.2,sharp:true}
 ];
+var LAYK=[14/30,1,54/30]; /* back, middle, front layer speed relative to Drift speed (Study 02: 14, 30, 54 px/s) */
+var MAXC=8,MAXB=12;
+function makePlan(){
+  var r=rng(1+Math.floor(Math.random()*233279)),i,p={ridge:[],layR:[],stars:[],clouds:[],birds:[]};
+  for(i=0;i<3;i++){p.ridge.push(1+Math.floor(r()*233279));p.layR.push(r())}
+  p.bodyK=r();p.bodyY=r();p.sunR=r();
+  for(i=0;i<40;i++)p.stars.push([r()*W,r()*260,.6+r()*1.2,.35+r()*.5]);
+  for(i=0;i<MAXC;i++)p.clouds.push({y:40+r()*150,k:.7+r()*.6,sr:r(),b:[r(),r(),r()],x:r()*(W+200)-100});
+  for(i=0;i<MAXB;i++)p.birds.push({y:50+r()*170,sr:r(),ph:r()*6.283,x:r()*(W+60)-30});
+  p.off=[r()*680,r()*680,r()*680];p.bx=120+r()*500;
+  return p;
+}
 function makeScene(){
   var ti;do{ti=Math.floor(Math.random()*TYPES.length)}while(ti===lastType);lastType=ti;
-  var T=TYPES[ti],r=rng(1+Math.floor(Math.random()*233279)),g=document.createElementNS(NS,'g'),h='',i;
-  h+='<rect width="'+W+'" height="'+H+'" fill="url(#'+T.sky+')"/>';
-  if(T.stars)for(i=0;i<40;i++)h+='<circle cx="'+f1(r()*W)+'" cy="'+f1(r()*260)+'" r="'+f1(.6+r()*1.2)+'" fill="#fff" opacity="'+(.35+r()*.5).toFixed(2)+'"/>';
-  var br=T.r[0]+r()*(T.r[1]-T.r[0]),by=T.y[0]+r()*(T.y[1]-T.y[0]);
-  h+='<g class="body">'+(T.body==='moon'
-    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="#e6e6e6"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="#cdcdcd"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="#d4d4d4"/>'
-    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="#f4f4f4"/>')+'</g>';
-  for(i=0;i<3;i++)h+='<path class="lay" fill="'+T.fills[i]+'" d="'+(T.sea?wave(r,T.base[i],T.amp[i]):ridge(r,T.base[i],T.amp[i],T.sharp))+'"/>';
-  g.innerHTML=h;
-  var s={g:g,body:g.querySelector('.body'),bx:120+r()*500,lays:g.querySelectorAll('.lay'),
-    off:[r()*680,r()*680,r()*680],speed:[14,30,54].map(function(v){return v*(.7+r()*.6)}),op:1};
+  var P=makePlan(),g=document.createElementNS(NS,'g');
+  var s={T:TYPES[ti],plan:P,g:g,time:0,fade:1,off:P.off.slice(),bx:P.bx,
+    cx:P.clouds.map(function(c){return c.x}),bxs:P.birds.map(function(b){return b.x})};
   world.appendChild(g);
-  moveScene(s,0);
+  build(s);
   return s;
 }
-function moveScene(s,dt){
-  for(var i=0;i<3;i++){s.off[i]=(s.off[i]+s.speed[i]*calm*dt)%680;s.lays[i].setAttribute('transform','translate('+(-s.off[i]).toFixed(2)+' 0)')}
-  s.bx-=6*calm*dt;if(s.bx<-80)s.bx+=W+160;
-  s.body.setAttribute('transform','translate('+s.bx.toFixed(1)+' 0)');
+/* (re)draw a scene from its plan and the current parameters; positions carry over */
+function build(s){
+  var T=s.T,P=s.plan,h='',i,id='sky'+(++gid);
+  h+='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1">'+T.sky.map(function(v,j){return '<stop offset="'+(j/(T.sky.length-1))+'" stop-color="'+tone(v)+'"/>'}).join('')+'</linearGradient></defs>';
+  h+='<rect width="'+W+'" height="'+H+'" fill="url(#'+id+')"/>';
+  if(T.stars)P.stars.forEach(function(st){h+='<circle cx="'+f1(st[0])+'" cy="'+f1(st[1])+'" r="'+f1(st[2])+'" fill="'+tone(.97)+'" opacity="'+st[3].toFixed(2)+'"/>'});
+  var br=T.r[0]+P.bodyK*(T.r[1]-T.r[0]),by=T.y[0]+P.bodyY*(T.y[1]-T.y[0]);
+  h+='<g class="body">'+(T.body==='moon'
+    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV)+'"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="'+tone(T.bodyV-.1)+'"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="'+tone(T.bodyV-.07)+'"/>'
+    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV)+'"/>')+'</g>';
+  if(prm.cShow)for(i=0;i<prm.cCount;i++){
+    var c=P.clouds[i],w=prm.cSize*c.k;
+    h+='<g class="cl" fill="'+tone(T.cloud)+'" opacity="'+(prm.cOpacity/100).toFixed(2)+'"><ellipse rx="'+f1(w/2)+'" ry="'+f1(w*.14)+'"/><circle cx="'+f1(-w*.18)+'" cy="'+f1(-w*.08)+'" r="'+f1(w*(.14+.06*c.b[0]))+'"/><circle cx="'+f1(w*.05)+'" cy="'+f1(-w*.13)+'" r="'+f1(w*(.18+.06*c.b[1]))+'"/><circle cx="'+f1(w*.24)+'" cy="'+f1(-w*.05)+'" r="'+f1(w*(.11+.05*c.b[2]))+'"/></g>';
+  }
+  if(prm.mShow)for(i=3-prm.mLayers;i<3;i++){
+    var amp=T.amp[i]*prm.mHeight/100;
+    h+='<path class="lay" data-i="'+i+'" fill="'+tone(T.fills[i])+'" d="'+(T.sea?wave(rng(P.ridge[i]),T.base[i],amp):ridge(rng(P.ridge[i]),T.base[i],amp,T.sharp))+'"/>';
+  }
+  if(prm.bShow)for(i=0;i<prm.bCount;i++)h+='<path class="bd" fill="none" stroke="'+tone(T.bird)+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
+  s.g.innerHTML=h;
+  s.body=s.g.querySelector('.body');
+  s.lays=Array.prototype.slice.call(s.g.querySelectorAll('.lay'));
+  s.clouds=Array.prototype.slice.call(s.g.querySelectorAll('.cl'));
+  s.birds=Array.prototype.slice.call(s.g.querySelectorAll('.bd'));
+  moveScene(s,0);
 }
+function moveScene(s,dt){
+  var P=s.plan,dE=dt?eased(s.time+dt)-eased(s.time):0;s.time+=dt;
+  var sm=prm.speed/100*calm,va=prm.variation/100;
+  function v(base,rv){return base*(1+va*(2*rv-1))*sm} /* per-element speed: ± variation around the base */
+  s.lays.forEach(function(el){
+    var i=+el.getAttribute('data-i');
+    s.off[i]=(s.off[i]+v(prm.mDrift*LAYK[i],P.layR[i])*dE)%680;
+    el.setAttribute('transform','translate('+(-s.off[i]).toFixed(2)+' 0)');
+  });
+  s.bx-=v(6,P.sunR)*dE;if(s.bx<-80)s.bx+=W+160;
+  s.body.setAttribute('transform','translate('+s.bx.toFixed(1)+' 0)');
+  s.clouds.forEach(function(el,i){
+    var c=P.clouds[i],w=prm.cSize*c.k,span=W+w*1.2;
+    s.cx[i]-=v(prm.cSpeed,c.sr)*dE;
+    if(s.cx[i]<-w*.6)s.cx[i]+=span;else if(s.cx[i]>W+w*.6)s.cx[i]-=span;
+    el.setAttribute('transform','translate('+s.cx[i].toFixed(1)+' '+c.y.toFixed(1)+')');
+  });
+  s.birds.forEach(function(el,i){
+    var b=P.birds[i],a=prm.bSpan/2;
+    s.bxs[i]+=v(prm.bSpeed,b.sr)*dE;if(s.bxs[i]>W+30)s.bxs[i]-=W+60;
+    var ph=s.time*prm.bFlap*6.283+b.ph,ty=-a*.6*Math.sin(ph),cy=-a*.3+ty*.25;
+    el.setAttribute('d','M'+f1(-a)+' '+f1(ty)+'Q'+f1(-a*.45)+' '+f1(cy)+' 0 0Q'+f1(a*.45)+' '+f1(cy)+' '+f1(a)+' '+f1(ty));
+    el.setAttribute('transform','translate('+s.bxs[i].toFixed(1)+' '+(b.y+4*Math.sin(s.time*1.3+b.ph)).toFixed(1)+')');
+  });
+}
+function rebuildAll(){scenes.forEach(build)}
 /* new random background; crossfades in on top of the current one unless instant */
 function newScene(instant){
   if(instant){world.innerHTML='';scenes=[]}
   var s=makeScene();
-  if(!instant&&scenes.length){s.op=0;s.g.setAttribute('opacity','0')}
+  if(!instant&&scenes.length>0){s.fade=0;s.g.setAttribute('opacity','0')}
   scenes.push(s);
 }
 function updateWorld(dt){
   if(!moving)return;
   scenes.forEach(function(s){moveScene(s,dt)});
   var top=scenes[scenes.length-1];
-  if(top.op<1){
-    top.op=Math.min(1,top.op+dt/(RM?.2:.7));
-    top.g.setAttribute('opacity',top.op.toFixed(3));
-    if(top.op>=1){while(scenes.length>1)world.removeChild(scenes.shift().g);top.g.removeAttribute('opacity')}
+  if(top.fade<1){
+    top.fade=Math.min(1,top.fade+dt/(RM?.2:.7));
+    top.g.setAttribute('opacity',EASE[prm.easing](top.fade).toFixed(3));
+    if(top.fade>=1){while(scenes.length>1)world.removeChild(scenes.shift().g);top.g.removeAttribute('opacity')}
   }
 }
 
@@ -176,7 +251,7 @@ function updateFrame(dt,now){
 /* Step 2 — Sharp Shutter                                              */
 /* ------------------------------------------------------------------ */
 var shutter=$('shutter'),disc=$('disc'),chk=$('chk'),hint=$('hint'),br=$('br'),b1=$('b1'),b2=$('b2'),flash=$('flash');
-var camState='idle',shots=[],ac=null,cycleT=0,CYCLE=3.2;
+var camState='idle',shots=[],ac=null,cycleT=0;
 var READY='Ready · tap the shutter',DONE='Captured · 1/250 s · f/2.8 · ISO 100';
 function click(){ /* synthesized shutter: two band-passed noise bursts and a low thump */
   try{
@@ -244,7 +319,7 @@ shutter.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){
 function updateCam(dt){
   if(camState!=='idle')return;
   cycleT+=dt;
-  if(cycleT>=CYCLE){cycleT=0;newScene(false)} /* random changing backgrounds while live */
+  if(cycleT>=prm.cycle){cycleT=0;newScene(false)} /* random changing backgrounds while live */
 }
 
 /* ------------------------------------------------------------------ */
@@ -374,6 +449,122 @@ function updateHand(now){
   setHand(curl);
   if(hinting)setHeld(HX,HY+9*h,0,1-0.03*h,3+2*h);
 }
+
+/* ------------------------------------------------------------------ */
+/* Background controls panel (Step 2 scene)                            */
+/* ------------------------------------------------------------------ */
+var GROUPS=[
+  {name:'Mountains',items:[
+    {key:'mShow',label:'Show mountains',type:'toggle'},
+    {key:'mLayers',label:'Layers',min:1,max:3,step:1,unit:'layers'},
+    {key:'mHeight',label:'Peak height',min:25,max:200,step:5,unit:'%'},
+    {key:'mDrift',label:'Drift speed',min:0,max:120,step:1,unit:'px/s',motion:true,note:'Middle layer; back ×0.47, front ×1.8'}]},
+  {name:'Clouds',items:[
+    {key:'cShow',label:'Show clouds',type:'toggle'},
+    {key:'cCount',label:'Count',min:0,max:MAXC,step:1,unit:'clouds'},
+    {key:'cSize',label:'Size',min:40,max:200,step:5,unit:'px wide'},
+    {key:'cSpeed',label:'Drift speed',min:0,max:80,step:1,unit:'px/s',motion:true},
+    {key:'cOpacity',label:'Opacity',min:10,max:100,step:5,unit:'%'}]},
+  {name:'Birds',items:[
+    {key:'bShow',label:'Show birds',type:'toggle'},
+    {key:'bCount',label:'Count',min:0,max:MAXB,step:1,unit:'birds'},
+    {key:'bSpan',label:'Wingspan',min:6,max:30,step:1,unit:'px'},
+    {key:'bSpeed',label:'Flight speed',min:10,max:150,step:1,unit:'px/s',motion:true},
+    {key:'bFlap',label:'Wingbeat',min:.5,max:6,step:.5,unit:'Hz',motion:true}]},
+  {name:'Color',items:[
+    {key:'hue',label:'Hue',min:0,max:360,step:1,unit:'°'},
+    {key:'sat',label:'Saturation',min:0,max:100,step:1,unit:'%',note:'0 % keeps the studies’ grayscale'},
+    {key:'bright',label:'Brightness',min:-40,max:40,step:1,unit:'%'},
+    {key:'contrast',label:'Contrast',min:50,max:150,step:5,unit:'%'}]},
+  {name:'Speed & motion',items:[
+    {key:'speed',label:'Overall speed',min:0,max:300,step:5,unit:'%',motion:true},
+    {key:'variation',label:'Speed variation',min:0,max:100,step:5,pre:'±',unit:'%',motion:true,note:'Random spread per mountain layer, cloud and bird'},
+    {key:'easing',label:'Motion curve',type:'choice',options:['Linear','Ease In','Ease Out','Ease In-Out'],motion:true,note:'Applied to each scene-change cycle and to the crossfade'},
+    {key:'cycle',label:'Scene change every',min:1,max:10,step:.1,unit:'s',motion:true}]}
+];
+var panel=$('panel'),panelBody=$('panelBody'),panelToggle=$('panelToggle'),copyBtn=$('copyPrompt'),ctl={};
+function num(it,v){return it.step<1?(+v).toFixed(1):String(v)}
+function fmt(it,v){return (it.pre||'')+num(it,v)+(it.unit?' '+it.unit:'')}
+function span(it){return (it.pre||'')+num(it,it.min)+'–'+(it.pre||'')+num(it,it.max)+(it.unit?' '+it.unit:'')}
+function buildPanel(){
+  var html='';
+  GROUPS.forEach(function(g){
+    html+='<fieldset class="pg"><legend>'+g.name+'</legend>';
+    g.items.forEach(function(it){
+      var id='p-'+it.key;
+      if(it.type==='toggle'){
+        html+='<label class="prow tog"><input type="checkbox" id="'+id+'" data-k="'+it.key+'"><span>'+it.label+'</span></label>';
+      }else if(it.type==='choice'){
+        html+='<div class="prow"><span class="plab" id="'+id+'-l">'+it.label+'</span><div class="seg" role="radiogroup" aria-labelledby="'+id+'-l">'+
+          it.options.map(function(o){return '<label><input type="radio" name="'+id+'" value="'+o+'" data-k="'+it.key+'"><span>'+o+'</span></label>'}).join('')+'</div>'+
+          (it.note?'<span class="pnote">'+it.note+'</span>':'')+'</div>';
+      }else{
+        html+='<div class="prow"><div class="ptop"><label class="plab" for="'+id+'">'+it.label+'</label><output id="'+id+'-o" for="'+id+'"></output></div>'+
+          '<input type="range" id="'+id+'" data-k="'+it.key+'" min="'+it.min+'" max="'+it.max+'" step="'+it.step+'">'+
+          '<span class="pnote">Range '+span(it)+(it.note?' · '+it.note:'')+'</span></div>';
+      }
+      ctl[it.key]=it;
+    });
+    html+='</fieldset>';
+  });
+  panelBody.querySelector('.pgroups').innerHTML=html;
+  syncPanel();
+}
+function syncPanel(){
+  Object.keys(ctl).forEach(function(k){
+    var it=ctl[k],id='p-'+k;
+    if(it.type==='toggle')$(id).checked=prm[k];
+    else if(it.type==='choice')panelBody.querySelectorAll('input[name="'+id+'"]').forEach(function(r){r.checked=r.value===prm[k]});
+    else{$(id).value=prm[k];$(id+'-o').textContent=fmt(it,prm[k])}
+  });
+}
+panelBody.addEventListener('input',function(e){
+  var k=e.target.getAttribute('data-k');if(!k)return;
+  var it=ctl[k];
+  if(it.type==='toggle')prm[k]=e.target.checked;
+  else if(it.type==='choice')prm[k]=e.target.value;
+  else{prm[k]=+e.target.value;$('p-'+k+'-o').textContent=fmt(it,prm[k])}
+  if(!it.motion)rebuildAll(); /* visual changes redraw the scene in place; motion changes apply on the next frame */
+});
+panelBody.addEventListener('keydown',function(e){e.stopPropagation()});
+$('pReset').addEventListener('click',function(){ /* reset state: restart the background animation, keep the settings */
+  newScene(true);cycleT=0;
+});
+$('pDefaults').addEventListener('click',function(){ /* restore defaults: put every control back */
+  prm=Object.assign({},DEF);syncPanel();rebuildAll();
+});
+function promptText(){
+  var lines=GROUPS.map(function(g){
+    return '- '+g.name+': '+g.items.map(function(it){
+      var v=prm[it.key];
+      if(it.type==='toggle')return it.label.toLowerCase()+' '+(v?'on':'off');
+      if(it.type==='choice')return it.label.toLowerCase()+' '+v;
+      return it.label.toLowerCase()+' '+fmt(it,v);
+    }).join(', ');
+  });
+  return 'In the Capture & Pin prototype (docs/js/app.js), set the Step 2 (Sharp Shutter) background parameters to these values and make them the new defaults in the control panel (the DEF object):\n'+
+    lines.join('\n')+'\n\nDEF = '+JSON.stringify(prm);
+}
+copyBtn.addEventListener('click',function(){
+  var txt=promptText(),label=copyBtn.textContent;
+  function ok(){copyBtn.textContent='Copied';setTimeout(function(){copyBtn.textContent=label},1500)}
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=txt;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok()}catch(_){copyBtn.textContent='Copy failed'}
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(ok,fallback);else fallback();
+});
+function setPanel(open){
+  panel.classList.toggle('collapsed',!open);
+  panelToggle.setAttribute('aria-expanded',open?'true':'false');
+  panelBody.hidden=!open;
+  document.body.classList.toggle('panel-open',open);
+}
+panelToggle.addEventListener('click',function(){setPanel(panel.classList.contains('collapsed'))});
+buildPanel();
+setPanel(window.matchMedia('(min-width: 1100px)').matches);
 
 /* ------------------------------------------------------------------ */
 /* Sequence                                                            */
