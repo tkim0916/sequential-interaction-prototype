@@ -38,6 +38,8 @@ var DEF={
   mShow:true,mLayers:3,mHeight:100,mDrift:30,
   cShow:true,cCount:3,cSize:100,cSpeed:12,cOpacity:80,
   bShow:true,bCount:3,bSpan:14,bSpeed:45,bFlap:3,
+  colorOn:false,skyC:'#7fb2e0',mountC:'#5d7f52',cloudC:'#ffffff',bodyC:'#ffcf5a',birdC:'#2b2b2b',colorAmt:100,
+  texture:'None',texOn:'Whole scene',texAmt:35,texScale:3,
   speed:100,variation:30,easing:'Linear',cycle:3.2
 };
 var prm=Object.assign({},DEF);
@@ -50,8 +52,35 @@ var EASE={
 /* eased clock: within each scene-change cycle the drift follows the chosen curve,
    covering the same distance per cycle as Linear */
 function eased(t){var P=prm.cycle,n=Math.floor(t/P);return P*(n+EASE[prm.easing](t/P-n))}
-/* gray value 0 (black) – 1 (white) -> CSS colour; the scene stays grayscale like the studies */
-function tone(v){v=Math.round(clamp(v,0,1)*255);return 'rgb('+v+','+v+','+v+')'}
+/* gray value 0 (black) – 1 (white) -> CSS colour. Grayscale like the studies by default; with
+   "Use color" on, the element's picked hue and saturation are applied while the gray value keeps
+   the light/dark structure (a luminosity blend). */
+function hsl(hex){
+  var n=parseInt(hex.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;
+  var mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn,h=0,sa=0;
+  if(d){sa=d/(1-Math.abs(2*l-1));h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h=(h*60+360)%360}
+  return [h,sa];
+}
+function tone(v,role){
+  v=clamp(v,0,1);
+  if(!prm.colorOn||!role){v=Math.round(v*255);return 'rgb('+v+','+v+','+v+')'}
+  var a=prm.colorAmt/100,c=hsl(prm[role]),L=v+(.5-v)*.3*a;
+  return 'hsl('+c[0].toFixed(0)+','+(c[1]*a*100).toFixed(0)+'%,'+(L*100).toFixed(1)+'%)';
+}
+/* texture defs for one scene (kept inside the scene so captured photos keep their texture) */
+function texDefs(id){
+  var k=prm.texScale,T=prm.texture;
+  if(T==='Grain'||T==='Paper')return '<filter id="'+id+'" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency="'+(T==='Grain'?1/(k*1.2):1/(k*14)).toFixed(4)+'" numOctaves="'+(T==='Grain'?2:4)+'" seed="7" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComposite operator="in" in2="SourceAlpha"/></filter>';
+  if(T==='Halftone')return '<pattern id="'+id+'" width="'+f1(k*2.5)+'" height="'+f1(k*2.5)+'" patternUnits="userSpaceOnUse"><circle cx="'+f1(k*1.25)+'" cy="'+f1(k*1.25)+'" r="'+f1(k*.6)+'" fill="#000"/></pattern>';
+  if(T==='Lines')return '<pattern id="'+id+'" width="'+f1(k*3)+'" height="'+f1(k*3)+'" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="'+f1(k*.7)+'" height="'+f1(k*3)+'" fill="#000"/></pattern>';
+  return '';
+}
+/* an overlay shape carrying the texture: d is a path, or omitted for a full-frame rect */
+function texShape(id,d){
+  var T=prm.texture,op=(prm.texAmt/100).toFixed(2),filt=T==='Grain'||T==='Paper';
+  var paint=filt?'fill="#fff" filter="url(#'+id+')"':'fill="url(#'+id+')"';
+  return d?'<path d="'+d+'" '+paint+' opacity="'+op+'" pointer-events="none"/>':'<rect width="'+W+'" height="'+H+'" '+paint+' opacity="'+op+'" pointer-events="none"/>';
+}
 function rng(seed){var s=seed;return function(){s=(s*9301+49297)%233280;return s/233280}}
 /* ridge(): Study 02's procedural silhouette; 16 points repeat every 680 so the 1360-wide path wraps seamlessly */
 function ridge(r,base,amp,sharp){
@@ -97,23 +126,26 @@ function makeScene(){
 }
 /* (re)draw a scene from its plan and the current parameters; positions carry over */
 function build(s){
-  var T=s.T,P=s.plan,h='',i,id='sky'+(++gid);
-  h+='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1">'+T.sky.map(function(v,j){return '<stop offset="'+(j/(T.sky.length-1))+'" stop-color="'+tone(v)+'"/>'}).join('')+'</linearGradient></defs>';
+  var T=s.T,P=s.plan,h='',i,id='sky'+(++gid),tx='tex'+gid,tex=prm.texture!=='None'&&prm.texAmt>0;
+  h+='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1">'+T.sky.map(function(v,j){return '<stop offset="'+(j/(T.sky.length-1))+'" stop-color="'+tone(v,'skyC')+'"/>'}).join('')+'</linearGradient>'+(tex?texDefs(tx):'')+'</defs>';
   h+='<rect width="'+W+'" height="'+H+'" fill="url(#'+id+')"/>';
+  if(tex&&prm.texOn==='Sky')h+=texShape(tx);
   if(T.stars)P.stars.forEach(function(st){h+='<circle cx="'+f1(st[0])+'" cy="'+f1(st[1])+'" r="'+f1(st[2])+'" fill="'+tone(.97)+'" opacity="'+st[3].toFixed(2)+'"/>'});
   var br=T.r[0]+P.bodyK*(T.r[1]-T.r[0]),by=T.y[0]+P.bodyY*(T.y[1]-T.y[0]);
   h+='<g class="body">'+(T.body==='moon'
-    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV)+'"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="'+tone(T.bodyV-.1)+'"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="'+tone(T.bodyV-.07)+'"/>'
-    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV)+'"/>')+'</g>';
+    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'bodyC')+'"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="'+tone(T.bodyV-.1,'bodyC')+'"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="'+tone(T.bodyV-.07,'bodyC')+'"/>'
+    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'bodyC')+'"/>')+'</g>';
   if(prm.cShow)for(i=0;i<prm.cCount;i++){
     var c=P.clouds[i],w=prm.cSize*c.k;
-    h+='<g class="cl" fill="'+tone(T.cloud)+'" opacity="'+(prm.cOpacity/100).toFixed(2)+'"><ellipse rx="'+f1(w/2)+'" ry="'+f1(w*.14)+'"/><circle cx="'+f1(-w*.18)+'" cy="'+f1(-w*.08)+'" r="'+f1(w*(.14+.06*c.b[0]))+'"/><circle cx="'+f1(w*.05)+'" cy="'+f1(-w*.13)+'" r="'+f1(w*(.18+.06*c.b[1]))+'"/><circle cx="'+f1(w*.24)+'" cy="'+f1(-w*.05)+'" r="'+f1(w*(.11+.05*c.b[2]))+'"/></g>';
+    h+='<g class="cl" fill="'+tone(T.cloud,'cloudC')+'" opacity="'+(prm.cOpacity/100).toFixed(2)+'"><ellipse rx="'+f1(w/2)+'" ry="'+f1(w*.14)+'"/><circle cx="'+f1(-w*.18)+'" cy="'+f1(-w*.08)+'" r="'+f1(w*(.14+.06*c.b[0]))+'"/><circle cx="'+f1(w*.05)+'" cy="'+f1(-w*.13)+'" r="'+f1(w*(.18+.06*c.b[1]))+'"/><circle cx="'+f1(w*.24)+'" cy="'+f1(-w*.05)+'" r="'+f1(w*(.11+.05*c.b[2]))+'"/></g>';
   }
   if(prm.mShow)for(i=3-prm.mLayers;i<3;i++){
     var amp=T.amp[i]*prm.mHeight/100;
-    h+='<path class="lay" data-i="'+i+'" fill="'+tone(T.fills[i])+'" d="'+(T.sea?wave(rng(P.ridge[i]),T.base[i],amp):ridge(rng(P.ridge[i]),T.base[i],amp,T.sharp))+'"/>';
+    var d=T.sea?wave(rng(P.ridge[i]),T.base[i],amp):ridge(rng(P.ridge[i]),T.base[i],amp,T.sharp);
+    h+='<g class="lay" data-i="'+i+'"><path fill="'+tone(T.fills[i],'mountC')+'" d="'+d+'"/>'+(tex&&prm.texOn==='Mountains'?texShape(tx,d):'')+'</g>';
   }
-  if(prm.bShow)for(i=0;i<prm.bCount;i++)h+='<path class="bd" fill="none" stroke="'+tone(T.bird)+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
+  if(tex&&prm.texOn==='Whole scene')h+=texShape(tx);
+  if(prm.bShow)for(i=0;i<prm.bCount;i++)h+='<path class="bd" fill="none" stroke="'+tone(T.bird,'birdC')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
   s.g.innerHTML=h;
   s.body=s.g.querySelector('.body');
   s.lays=Array.prototype.slice.call(s.g.querySelectorAll('.lay'));
@@ -467,6 +499,19 @@ var GROUPS=[
     {key:'bSpan',label:'Wingspan',min:6,max:30,step:1,unit:'px'},
     {key:'bSpeed',label:'Flight speed',min:10,max:150,step:1,unit:'px/s',motion:true},
     {key:'bFlap',label:'Wingbeat',min:.5,max:6,step:.5,unit:'Hz',motion:true}]},
+  {name:'Color',items:[
+    {key:'colorOn',label:'Use color',type:'toggle',note:'Off keeps the studies’ grayscale. Picking a color turns it on.'},
+    {key:'skyC',label:'Sky',type:'color'},
+    {key:'mountC',label:'Mountains & sea',type:'color'},
+    {key:'cloudC',label:'Clouds',type:'color'},
+    {key:'bodyC',label:'Sun & moon',type:'color'},
+    {key:'birdC',label:'Birds',type:'color'},
+    {key:'colorAmt',label:'Color strength',min:0,max:100,step:5,unit:'%',note:'Light and shade still follow each scene’s grays'}]},
+  {name:'Texture',items:[
+    {key:'texture',label:'Texture',type:'choice',options:['None','Grain','Paper','Halftone','Lines']},
+    {key:'texOn',label:'Apply to',type:'choice',options:['Whole scene','Sky','Mountains']},
+    {key:'texAmt',label:'Strength',min:0,max:100,step:5,unit:'%'},
+    {key:'texScale',label:'Scale',min:1,max:10,step:.5,unit:'px',note:'Size of the grain, dots or line spacing'}]},
   {name:'Speed & motion',items:[
     {key:'speed',label:'Overall speed',min:0,max:300,step:5,unit:'%',motion:true},
     {key:'variation',label:'Speed variation',min:0,max:100,step:5,pre:'±',unit:'%',motion:true,note:'Random spread per mountain layer, cloud and bird'},
@@ -484,7 +529,9 @@ function buildPanel(){
     g.items.forEach(function(it){
       var id='p-'+it.key;
       if(it.type==='toggle'){
-        html+='<label class="prow tog"><input type="checkbox" id="'+id+'" data-k="'+it.key+'"><span>'+it.label+'</span></label>';
+        html+='<label class="prow tog"><input type="checkbox" id="'+id+'" data-k="'+it.key+'"><span>'+it.label+'</span></label>'+(it.note?'<span class="pnote">'+it.note+'</span>':'');
+      }else if(it.type==='color'){
+        html+='<label class="prow pcol" for="'+id+'"><span class="plab">'+it.label+'</span><span class="pcv"><output id="'+id+'-o"></output><input type="color" id="'+id+'" data-k="'+it.key+'"></span></label>';
       }else if(it.type==='choice'){
         html+='<div class="prow"><span class="plab" id="'+id+'-l">'+it.label+'</span><div class="seg" role="radiogroup" aria-labelledby="'+id+'-l">'+
           it.options.map(function(o){return '<label><input type="radio" name="'+id+'" value="'+o+'" data-k="'+it.key+'"><span>'+o+'</span></label>'}).join('')+'</div>'+
@@ -505,6 +552,7 @@ function syncPanel(){
   Object.keys(ctl).forEach(function(k){
     var it=ctl[k],id='p-'+k;
     if(it.type==='toggle')$(id).checked=prm[k];
+    else if(it.type==='color'){$(id).value=prm[k];$(id+'-o').textContent=prm[k]}
     else if(it.type==='choice')panelBody.querySelectorAll('input[name="'+id+'"]').forEach(function(r){r.checked=r.value===prm[k]});
     else{$(id).value=prm[k];$(id+'-o').textContent=fmt(it,prm[k])}
   });
@@ -513,6 +561,7 @@ panelBody.addEventListener('input',function(e){
   var k=e.target.getAttribute('data-k');if(!k)return;
   var it=ctl[k];
   if(it.type==='toggle')prm[k]=e.target.checked;
+  else if(it.type==='color'){prm[k]=e.target.value;$('p-'+k+'-o').textContent=prm[k];if(!prm.colorOn){prm.colorOn=true;$('p-colorOn').checked=true}}
   else if(it.type==='choice')prm[k]=e.target.value;
   else{prm[k]=+e.target.value;$('p-'+k+'-o').textContent=fmt(it,prm[k])}
   if(!it.motion)rebuildAll(); /* visual changes redraw the scene in place; motion changes apply on the next frame */
@@ -529,7 +578,7 @@ function promptText(){
     return '- '+g.name+': '+g.items.map(function(it){
       var v=prm[it.key];
       if(it.type==='toggle')return it.label.toLowerCase()+' '+(v?'on':'off');
-      if(it.type==='choice')return it.label.toLowerCase()+' '+v;
+      if(it.type==='choice'||it.type==='color')return it.label.toLowerCase()+' '+v;
       return it.label.toLowerCase()+' '+fmt(it,v);
     }).join(', ');
   });

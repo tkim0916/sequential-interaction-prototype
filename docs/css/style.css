@@ -141,3 +141,7 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 /* keep the stage clear of the panel: beside it on wide screens, below its tab on narrow ones */
 @media (min-width:1100px){body.panel-open{padding-left:322px}}
 @media (max-width:1099px){.wrap{padding-top:48px}}
+.pcol{flex-direction:row;align-items:center;justify-content:space-between;cursor:pointer}
+.pcv{display:flex;align-items:center;gap:8px}
+.pcv output{font:12px var(--mono);color:var(--fg-2);text-transform:uppercase}
+.pcol input[type=color]{width:36px;height:24px;padding:0 2px;border:1px solid var(--btn-border);border-radius:6px;background:var(--btn-bg);cursor:pointer}
