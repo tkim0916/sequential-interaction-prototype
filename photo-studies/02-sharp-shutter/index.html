@@ -1,0 +1,167 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sharp Shutter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one centered viewfinder frame, a camera-style readout beneath it */
+:root{
+  --bg:#f2f3f4;
+  --surface:#e7e8ea;
+  --surface-2:#fafafa;
+  --fg:#141517;
+  --fg-2:#5b5e64;
+  --line:rgba(20,21,23,.14);
+  --flash:#ffffff;
+  --accent:#2f5fd0;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111214;--surface:#1b1c1f;--surface-2:#232427;--fg:#f0f1f2;--fg-2:#9a9da3;--line:rgba(240,241,242,.16);--accent:#8aa9f5;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111214;--surface:#1b1c1f;--surface-2:#232427;--fg:#f0f1f2;--fg-2:#9a9da3;--line:rgba(240,241,242,.16);--accent:#8aa9f5;color-scheme:dark;
+}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--sans);
+  padding-block:32px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:4px 0 0;font-size:14px;line-height:1.5;color:var(--fg-2)}
+.stage{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.stage svg{display:block;width:100%;height:auto}
+.hud{margin:0;min-height:20px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2);font-variant-numeric:tabular-nums}
+.ink{fill:var(--fg)}
+.ring{fill:none;stroke:var(--fg);stroke-width:3}
+.brk{fill:none;stroke:var(--fg-2)}
+.chk{fill:none;stroke:var(--surface-2);stroke-width:4;stroke-linecap:square;stroke-linejoin:miter;transition:opacity .2s}
+.hint{fill:none;stroke:var(--fg-2);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:ping 1.8s ease-out infinite}
+@keyframes ping{from{transform:scale(1);opacity:.5}to{transform:scale(1.3);opacity:0}}
+#br{transform-origin:340px 180px;transition:transform .25s ease-out}
+#shutter{cursor:pointer;outline:none}
+#shutter:focus-visible #hit{stroke:var(--accent);stroke-width:2}
+#flash{fill:var(--flash);pointer-events:none}
+#reset{position:absolute;top:12px;left:12px;width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+#reset:hover{background:var(--surface)}
+#reset:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.hint{animation:none;opacity:.35}#br{transition:none}}
+</style>
+
+<main class="wrap">
+  <div>
+    <h1>Sharp Shutter</h1>
+    <p class="sub">The scene keeps moving until you press the shutter. Press it to freeze the frame.</p>
+  </div>
+  <div class="stage">
+    <svg viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg" aria-labelledby="t d">
+      <title id="t">Shutter capture</title>
+      <desc id="d">A drifting landscape behind a camera shutter button inside focus brackets. Pressing the shutter plays a click, freezes the scene and locks the brackets.</desc>
+      <rect width="680" height="360" fill="var(--surface)"/>
+      <circle id="sun" class="ink" cx="560" cy="96" r="24" opacity="0.12"/>
+      <path id="l1" class="ink" opacity="0.07"/>
+      <path id="l2" class="ink" opacity="0.11"/>
+      <path id="l3" class="ink" opacity="0.17"/>
+      <rect id="flash" width="680" height="360" opacity="0"/>
+      <g id="br">
+        <g id="b1" class="brk" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
+          <path d="M240 108 L240 80 L268 80"/><path d="M412 80 L440 80 L440 108"/><path d="M440 252 L440 280 L412 280"/><path d="M268 280 L240 280 L240 252"/>
+        </g>
+        <g id="b2" class="brk" stroke-width="1.5" stroke-linecap="square">
+          <path d="M240 180 H252"/><path d="M440 180 H428"/><path d="M340 80 V92"/><path d="M340 280 V268"/>
+        </g>
+      </g>
+      <circle id="hint" class="hint" cx="340" cy="180" r="52"/>
+      <g id="shutter" role="button" tabindex="0" aria-label="Shutter: capture photo">
+        <circle id="hit" cx="340" cy="180" r="62" fill="transparent" stroke="none"/>
+        <circle class="ring" cx="340" cy="180" r="52"/>
+        <circle id="disc" class="ink" cx="340" cy="180" r="40"/>
+        <path id="chk" class="chk" d="M323 181 L335 193 L359 167" opacity="0"/>
+      </g>
+    </svg>
+    <button id="reset" type="button" aria-label="Restart" title="Restart" hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+    </button>
+  </div>
+  <p id="status" class="hud" aria-live="polite">Ready · tap the shutter</p>
+</main>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+function ridge(base,amp,seed){var s=seed,ys=[],i,k,d;function r(){s=(s*9301+49297)%233280;return s/233280}
+for(i=0;i<16;i++)ys.push(base-r()*amp);
+d="M0 360 L0 "+ys[0].toFixed(1);
+for(k=1;k<=32;k++)d+=" L"+(k*42.5)+" "+ys[k%16].toFixed(1);
+return d+" L1360 360 Z"}
+$("l1").setAttribute("d",ridge(230,50,7));
+$("l2").setAttribute("d",ridge(272,40,31));
+$("l3").setAttribute("d",ridge(320,30,59));
+var layers=[$("l1"),$("l2"),$("l3")],speed=[14,30,54],off=[0,0,0],sunX=0;
+var calm=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches?0.3:1;
+var running=true,last=null,state="idle",ac=null;
+var READY="Ready · tap the shutter",DONE="Captured · 1/250 s · f/2.8 · ISO 100";
+function click(){
+try{
+ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+if(ac.state==="suspended")ac.resume();
+var t=ac.currentTime,len=Math.floor(ac.sampleRate*0.05),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0),i;
+for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+[[0,2800,0.5],[0.07,1800,0.4]].forEach(function(p){
+var s=ac.createBufferSource();s.buffer=buf;
+var f=ac.createBiquadFilter();f.type="bandpass";f.frequency.value=p[1];f.Q.value=0.9;
+var g=ac.createGain();g.gain.value=p[2];
+s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t+p[0])});
+var o=ac.createOscillator(),og=ac.createGain();
+o.type="sine";o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(60,t+0.08);
+og.gain.setValueAtTime(0.35,t);og.gain.exponentialRampToValueAtTime(0.001,t+0.09);
+o.connect(og);og.connect(ac.destination);o.start(t);o.stop(t+0.1)
+}catch(e){}}
+function tick(t){
+if(last===null)last=t;
+var dt=Math.min((t-last)/1000,0.05);last=t;
+if(running){
+for(var i=0;i<3;i++){off[i]=(off[i]+speed[i]*calm*dt)%680;layers[i].setAttribute("transform","translate("+(-off[i].toFixed(2))+" 0)")}
+sunX=(sunX+6*calm*dt)%780;
+$("sun").setAttribute("cx",(700-sunX).toFixed(1))}
+requestAnimationFrame(tick)}
+requestAnimationFrame(tick);
+function capture(){
+if(state!=="idle")return;
+state="capturing";running=false;
+click();
+$("disc").setAttribute("r","34");
+$("hint").style.display="none";
+$("status").textContent="Capturing…";
+var f=$("flash");f.style.transition="none";f.setAttribute("opacity","0.95");f.getBoundingClientRect();
+setTimeout(function(){f.style.transition="opacity .4s ease-out";f.setAttribute("opacity","0")},60);
+setTimeout(function(){
+state="captured";
+$("disc").setAttribute("r","40");
+$("chk").setAttribute("opacity","1");
+$("br").style.transform="scale(0.92)";
+$("b1").style.stroke="var(--fg)";$("b1").setAttribute("stroke-width","3.5");
+$("b2").style.stroke="var(--fg)";
+$("status").textContent=DONE;
+$("reset").hidden=false},480)}
+function reset(){
+if(state!=="captured")return;
+state="idle";running=true;last=null;
+$("chk").setAttribute("opacity","0");
+$("br").style.transform="scale(1)";
+$("b1").style.stroke="";$("b1").setAttribute("stroke-width","2.5");
+$("b2").style.stroke="";
+$("hint").style.display="";
+$("status").textContent=READY;
+$("reset").hidden=true;
+$("shutter").focus()}
+$("shutter").addEventListener("click",capture);
+$("shutter").addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();capture()}});
+$("reset").addEventListener("click",reset);
+})();
+</script>
+
+</body></html>

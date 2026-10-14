@@ -1,0 +1,247 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Magnet Wall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: one centered stage, a plaster wall with a magnetic hand reaching up from the bottom edge; a single caption line below. */
+:root{
+  --bg:#e9e9eb;
+  --wall:#f6f6f7;
+  --wall-line:#e1e1e4;
+  --ink:#131315;
+  --muted:#5e5e66;
+  --dash:#9a9aa2;
+  --shadow:rgba(0,0,0,.14);
+  --pin:#3a3a40;
+  --pin-hl:#c4c4ca;
+  --btn-bg:#ffffff;
+  --btn-border:#c9c9cf;
+  --focus:#131315;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e10;
+    --wall:#18181b;
+    --wall-line:#242428;
+    --ink:#f1f1f3;
+    --muted:#a2a2aa;
+    --dash:#74747c;
+    --shadow:rgba(0,0,0,.5);
+    --pin:#d6d6dc;
+    --pin-hl:#4a4a50;
+    --btn-bg:#232327;
+    --btn-border:#3a3a40;
+    --focus:#f1f1f3;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e10;
+  --wall:#18181b;
+  --wall-line:#242428;
+  --ink:#f1f1f3;
+  --muted:#a2a2aa;
+  --dash:#74747c;
+  --shadow:rgba(0,0,0,.5);
+  --pin:#d6d6dc;
+  --pin-hl:#4a4a50;
+  --btn-bg:#232327;
+  --btn-border:#3a3a40;
+  --focus:#f1f1f3;
+  color-scheme:dark;
+}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  padding-block:24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.page{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:500;margin:0;letter-spacing:.01em}
+.count{font-family:var(--font-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stage{position:relative;min-width:0}
+#scene{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:12px}
+#reset{
+  position:absolute;top:12px;left:12px;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  background:var(--btn-bg);color:var(--ink);
+  border:1px solid var(--btn-border);border-radius:8px;cursor:pointer;
+}
+#reset:hover{border-color:var(--muted)}
+#reset:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#reset svg{width:18px;height:18px;display:block}
+.hint{margin:0;font-size:14px;line-height:1.5;color:var(--muted)}
+.wall-fill{fill:var(--wall)}
+.wall-line{stroke:var(--wall-line)}
+.hand{fill:var(--ink)}
+.hand-s{stroke:var(--ink)}
+.shadow{fill:var(--shadow)}
+.dash{stroke:var(--dash)}
+.march{animation:m 1.2s linear infinite}
+@keyframes m{to{stroke-dashoffset:-18}}
+@media (prefers-reduced-motion: reduce){.march{animation:none}}
+</style>
+
+<div class="page">
+  <div class="head">
+    <h1>Magnet Wall</h1>
+    <span class="count" id="count" aria-live="polite"></span>
+  </div>
+  <div class="stage">
+    <button id="reset" type="button" aria-label="Reset wall" title="Reset wall">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><polyline points="4 4.5 4.5 8.5 8.5 8"/></svg>
+    </button>
+    <svg id="scene" viewBox="0 0 680 470" role="img" aria-label="A magnetic hand holds a photograph above it. Drag the photograph onto the wall and release to pin it.">
+      <title>Pin photographs to a wall</title>
+      <rect class="wall-fill" x="0" y="0" width="680" height="470" rx="12"/>
+      <g class="wall-line" stroke-width="0.75">
+        <line x1="0" y1="60" x2="680" y2="60"/><line x1="0" y1="120" x2="680" y2="120"/><line x1="0" y1="180" x2="680" y2="180"/><line x1="0" y1="240" x2="680" y2="240"/><line x1="0" y1="300" x2="680" y2="300"/><line x1="0" y1="360" x2="680" y2="360"/><line x1="0" y1="420" x2="680" y2="420"/>
+      </g>
+      <g id="pinned"></g>
+      <g transform="translate(0 80)">
+        <g class="hand-s" stroke-width="20" stroke-linecap="round" fill="none">
+          <line id="f0" x1="308" y1="300" x2="306" y2="226"/>
+          <line id="f1" x1="330" y1="300" x2="330" y2="206"/>
+          <line id="f2" x1="352" y1="300" x2="354" y2="206"/>
+          <line id="f3" x1="374" y1="300" x2="378" y2="228"/>
+          <line id="th" x1="298" y1="332" x2="262" y2="290"/>
+        </g>
+        <rect class="hand" x="296" y="286" width="88" height="94" rx="28"/>
+      </g>
+      <g id="lines" class="dash" stroke-width="1.5" stroke-dasharray="3 6" stroke-linecap="round" fill="none">
+        <line class="march" id="l0"/><line class="march" id="l1"/><line class="march" id="l2"/>
+      </g>
+      <g id="held" style="cursor:grab;opacity:0">
+        <rect id="hs" class="shadow" x="-56" y="-68" width="112" height="136"/>
+        <g id="hc"></g>
+      </g>
+    </svg>
+  </div>
+  <p class="hint" id="msg"></p>
+</div>
+
+<script>
+var NS='http://www.w3.org/2000/svg';
+var svg=document.getElementById('scene'),held=document.getElementById('held'),hc=document.getElementById('hc'),hs=document.getElementById('hs'),pinned=document.getElementById('pinned'),msg=document.getElementById('msg'),count=document.getElementById('count');
+var RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var HX=340,HY=190,idx=0,drag=false,busy=true,cx=HX,cy=HY,off={x:0,y:0},curl=0;
+var rots=[-4,3,-2,5];
+var frame='<rect x="-56" y="-68" width="112" height="136" fill="#f5f5f5" stroke="#bbb" stroke-width="0.5"/><rect x="-26" y="46" width="52" height="4" fill="#ccc"/>';
+var art=[
+'<rect x="-46" y="-58" width="92" height="92" fill="#cfcfcf"/><circle cx="16" cy="-30" r="10" fill="#f5f5f5"/><polygon points="-46,34 -16,-6 6,22 22,2 46,34" fill="#777"/>',
+'<rect x="-46" y="-58" width="92" height="92" fill="#555"/><circle cx="-14" cy="-28" r="12" fill="#eee"/><rect x="-46" y="14" width="92" height="20" fill="#333"/>',
+'<rect x="-46" y="-58" width="92" height="92" fill="#bdbdbd"/><circle cx="-12" cy="-12" r="22" fill="#888"/><circle cx="12" cy="-12" r="22" fill="#555" opacity="0.75"/>',
+'<rect x="-46" y="-58" width="92" height="92" fill="#e2e2e2"/><g fill="none" stroke="#888" stroke-width="4" stroke-linecap="round"><path d="M-40 -34 Q-20 -48 0 -34 T40 -34"/><path d="M-40 -12 Q-20 -26 0 -12 T40 -12"/><path d="M-40 10 Q-20 -4 0 10 T40 10"/></g>'
+];
+var starts=[[306,290],[342,274],[378,292]];
+var tips=[[306,226],[330,206],[354,206],[378,228]];
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function pt(e){var p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+function setHand(k){
+for(var i=0;i<4;i++){
+var f=document.getElementById('f'+i);
+f.setAttribute('x2',tips[i][0]+(340-tips[i][0])*0.28*k);
+f.setAttribute('y2',tips[i][1]+38*k);
+}
+var t=document.getElementById('th');
+t.setAttribute('x2',262+30*k);
+t.setAttribute('y2',290-4*k);
+}
+function setHeld(x,y,r,s,lift){
+cx=x;cy=y;
+held.setAttribute('transform','translate('+x+' '+y+') rotate('+r+') scale('+s+')');
+hs.setAttribute('transform','translate('+lift+' '+(lift*1.3)+')');
+var ends=[[x-30,y+70],[x,y+70],[x+30,y+70]];
+for(var i=0;i<3;i++){var l=document.getElementById('l'+i);l.setAttribute('x1',starts[i][0]);l.setAttribute('y1',starts[i][1]);l.setAttribute('x2',ends[i][0]);l.setAttribute('y2',ends[i][1]);}
+}
+function tween(ms,fn,done){
+var t0=performance.now();
+function f(t){var k=Math.min(1,(t-t0)/ms);var e=1-Math.pow(1-k,3);fn(e);if(k<1)requestAnimationFrame(f);else if(done)done();}
+requestAnimationFrame(f);
+}
+function loop(t){
+var hinting=!drag&&!busy&&idx<4;
+var target=0,h=0;
+if(drag){target=0.9;}
+else if(hinting&&!RM){
+var p=((t/1000)%2.8)/2.8;
+h=p<0.55?Math.sin(p/0.55*Math.PI):0;
+target=h*0.9;
+}
+curl+=(target-curl)*0.22;
+setHand(curl);
+if(hinting){setHeld(HX,HY+9*h,0,1-0.03*h,3+2*h);}
+requestAnimationFrame(loop);
+}
+function setMsg(){
+if(idx<4){
+count.textContent='Photo '+(idx+1)+' of 4';
+msg.textContent='Drag the photograph to the wall and let go to pin it.';
+}else{
+count.textContent='4 of 4 pinned';
+msg.textContent='All four photographs are up. Use the reset button to start again.';
+}
+}
+function spawn(){
+document.getElementById('lines').style.opacity=1;
+if(idx>=4){held.style.opacity=0;document.getElementById('lines').style.opacity=0;busy=true;setMsg();return;}
+hc.innerHTML=frame+art[idx];
+setMsg();
+tween(350,function(k){setHeld(HX,HY,0,0.6+0.4*k,3);held.style.opacity=k;},function(){busy=false;});
+}
+function pin(tx,ty){
+var r=rots[idx%4];
+var g=document.createElementNS(NS,'g');
+g.setAttribute('transform','translate('+tx+' '+ty+') rotate('+r+')');
+g.innerHTML='<rect class="shadow" x="-56" y="-68" width="112" height="136" transform="translate(2 3)"/>'+frame+art[idx]+'<g class="pn"><circle cx="0" cy="0" r="6" style="fill:var(--pin)"/><circle cx="-1.8" cy="-1.8" r="2" style="fill:var(--pin-hl)"/></g>';
+pinned.appendChild(g);
+var pn=g.querySelector('.pn');
+tween(RM?1:260,function(k){pn.setAttribute('transform','translate(0 '+(-60-(1-k)*16)+') scale('+(1+(1-k)*0.7)+')');});
+held.style.opacity=0;
+idx++;
+setTimeout(spawn,420);
+}
+held.addEventListener('pointerdown',function(e){
+if(busy)return;
+drag=true;
+held.setPointerCapture(e.pointerId);
+var p=pt(e);off={x:cx-p.x,y:cy-p.y};
+held.style.cursor='grabbing';
+setHeld(cx,cy,0,1.06,8);
+e.preventDefault();
+});
+held.addEventListener('pointermove',function(e){
+if(!drag)return;
+var p=pt(e);
+var x=clamp(p.x+off.x,56,624),y=clamp(p.y+off.y,68,410);
+setHeld(x,y,clamp((x-HX)/18,-9,9),1.06,8);
+});
+function release(){
+if(!drag)return;
+drag=false;busy=true;
+held.style.cursor='grab';
+var x0=cx,y0=cy,r0=clamp((cx-HX)/18,-9,9);
+if(cy>250){
+tween(260,function(k){setHeld(x0+(HX-x0)*k,y0+(HY-y0)*k,r0*(1-k),1.06-0.06*k,8-5*k);},function(){busy=false;});
+}else{
+var tx=clamp(x0,70,610),ty=clamp(y0,80,200),r1=rots[idx%4];
+tween(180,function(k){setHeld(x0+(tx-x0)*k,y0+(ty-y0)*k,r0+(r1-r0)*k,1.06-0.06*k,8-6*k);},function(){pin(tx,ty);});
+}
+}
+held.addEventListener('pointerup',release);
+held.addEventListener('pointercancel',release);
+document.getElementById('reset').addEventListener('click',function(){
+pinned.innerHTML='';idx=0;drag=false;busy=true;held.style.opacity=0;spawn();
+});
+spawn();
+requestAnimationFrame(loop);
+</script>
+
+</body></html>

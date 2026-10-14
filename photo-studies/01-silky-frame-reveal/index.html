@@ -1,0 +1,104 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Silky Frame Reveal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one square black stage, centered. The frame opens from nothing as the user pinches out. */
+:root{--bg:#ececec;--fg:#2b2b2b;--line:#cfcfcf;--font:system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1c1c;--fg:#ececec;--line:#3a3a3a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1c1c;--fg:#ececec;--line:#3a3a3a;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:center}
+#stage{position:relative;width:min(100%,560px);aspect-ratio:1;max-height:100%;border-radius:14px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;outline:none;background:#000;box-shadow:0 0 0 1px var(--line)}
+#stage.done{cursor:default}
+#stage:focus-visible{box-shadow:0 0 0 3px var(--fg)}
+#stage>svg{display:block;width:100%;height:100%}
+#rs{position:absolute;top:10px;left:10px;width:36px;height:36px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;background:rgba(255,255,255,.82);color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:background .2s,transform .2s}
+#rs:hover{background:#fff}#rs:active{transform:scale(.94)}
+#rs:focus-visible{outline:2px solid #fff;outline-offset:2px}
+</style>
+<div id="stage" tabindex="0" role="application" aria-label="Black screen. Pinch out with two fingers, scroll, or press plus to open the camera frame.">
+<svg id="svg" viewBox="0 0 400 400" aria-hidden="true">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d9d9"/><stop offset=".6" stop-color="#b4b4b4"/><stop offset="1" stop-color="#8d8d8d"/></linearGradient>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity=".35"/></filter>
+</defs>
+<rect width="400" height="400" fill="#000"/>
+<g id="scene">
+<rect width="400" height="400" fill="url(#sky)"/>
+<circle cx="292" cy="108" r="30" fill="#f2f2f2"/>
+<path d="M0 270Q70 210 140 250T290 236T400 262V400H0Z" fill="#7d7d7d"/>
+<path d="M0 316Q90 276 180 306T400 296V400H0Z" fill="#5c5c5c"/>
+<path d="M60 330L96 250L132 330Z" fill="#454545"/><path d="M110 330L142 262L174 330Z" fill="#3a3a3a"/>
+</g>
+<g id="fr"></g><g id="cue" pointer-events="none"></g>
+</svg>
+<button id="rs" type="button" aria-label="Restart" title="Restart"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.7-6.2"/><path d="M3.5 3.8v4.4h4.4"/></svg></button>
+</div>
+<script>
+(function(){
+var MAX=400,CX=200,CY=200,st=document.getElementById('stage'),svg=document.getElementById('svg'),fr=document.getElementById('fr'),cue=document.getElementById('cue'),scene=document.getElementById('scene');
+var t=0,c=0,done=false,ca=1,t0=performance.now();
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function ss(a,b,v){v=clamp((v-a)/(b-a),0,1);return v*v*(3-2*v)}
+function f(n){return n.toFixed(1)}
+function kk(){return 400/svg.getBoundingClientRect().width}
+function push(d){if(done)return;t=clamp(t+d,0,MAX);if(t>=MAX-1){t=MAX;done=true;st.classList.add('done')}}
+function draw(){
+ var p=c/MAX,s=c-8*ss(.85,1,p),h=''; /* at full reveal the frame sits just inside the screen edge */
+ var mk=1-.62*ss(.82,1,p); /* surround stays black, then settles to a soft dim once revealed */
+ if(s>=3){
+  var x0=CX-s/2,y0=CY-s/2,x1=CX+s/2,y1=CY+s/2,R=s*.083,L=s*.183,a=ss(0,.12,p);
+  h+='<path fill-rule="evenodd" d="M0 0H400V400H0Z M'+f(x0+R)+' '+f(y0)+'H'+f(x1-R)+'Q'+f(x1)+' '+f(y0)+' '+f(x1)+' '+f(y0+R)+'V'+f(y1-R)+'Q'+f(x1)+' '+f(y1)+' '+f(x1-R)+' '+f(y1)+'H'+f(x0+R)+'Q'+f(x0)+' '+f(y1)+' '+f(x0)+' '+f(y1-R)+'V'+f(y0+R)+'Q'+f(x0)+' '+f(y0)+' '+f(x0+R)+' '+f(y0)+'Z" fill="#000" fill-opacity="'+mk.toFixed(3)+'"/>';
+  h+='<rect x="'+f(x0)+'" y="'+f(y0)+'" width="'+f(s)+'" height="'+f(s)+'" rx="'+f(R)+'" fill="none" stroke="#fff" stroke-opacity="'+(.35*a).toFixed(3)+'"/>';
+  var ga=(.28*ss(.25,.9,p)).toFixed(3);h+='<g stroke="#fff" stroke-opacity="'+ga+'">';
+  for(var k=1;k<3;k++){var u=x0+s/3*k,v=y0+s/3*k;h+='<line x1="'+f(u)+'" y1="'+f(y0)+'" x2="'+f(u)+'" y2="'+f(y1)+'"/><line x1="'+f(x0)+'" y1="'+f(v)+'" x2="'+f(x1)+'" y2="'+f(v)+'"/>'}
+  h+='</g><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#sh)" opacity="'+a.toFixed(3)+'">';
+  [[x0,y0,1,1],[x1,y0,-1,1],[x0,y1,1,-1],[x1,y1,-1,-1]].forEach(function(q){var X=q[0],Y=q[1],sx=q[2],sy=q[3];
+   h+='<path d="M'+f(X)+' '+f(Y+sy*L)+'V'+f(Y+sy*R)+'Q'+f(X)+' '+f(Y)+' '+f(X+sx*R)+' '+f(Y)+'H'+f(X+sx*L)+'"/>'});
+  var r=s*.067,g=s*.108,e=s*.0245,fa=ss(.35,1,p).toFixed(3);
+  h+='</g><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" filter="url(#sh)" opacity="'+fa+'"><circle cx="'+CX+'" cy="'+CY+'" r="'+f(r)+'" stroke-opacity=".9"/><path d="M'+f(CX-g)+' '+CY+'H'+f(CX-g+e)+'M'+f(CX+g-e)+' '+CY+'H'+f(CX+g)+'M'+CX+' '+f(CY-g)+'V'+f(CY-g+e)+'M'+CX+' '+f(CY+g-e)+'V'+f(CY+g)+'"/></g>';
+ }else h+='<rect width="400" height="400" fill="#000"/>';
+ fr.innerHTML=h;
+}
+/* hint: two fingers spreading apart with diagonal arrows, shown on the black screen */
+function arrow(x,y,dx,dy,z){var px=-dy,py=dx;return 'M'+f(x-dx*z*.4+px*z*.4)+' '+f(y-dy*z*.4+py*z*.4)+'L'+f(x+dx*z*.4)+' '+f(y+dy*z*.4)+'L'+f(x-dx*z*.4-px*z*.4)+' '+f(y-dy*z*.4-py*z*.4)}
+function drawCue(now){
+ if(ca<.01){cue.innerHTML='';return}
+ var ph=((now-t0)/2600)%1,e=ph<.75?ss(0,.75,ph):1-ss(.75,1,ph)*0+0,k=.7071;
+ var pe=ph<.7?ss(0,.7,ph):1,d=14+pe*38,r=7,ax=CX-d*k,ay=CY+d*k,bx=CX+d*k,by=CY-d*k,w=d+26,z=11;
+ var st1='fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
+ var dot=function(x,y){return '<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+r*2+'" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".8" stroke-width="1.6"/><circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+r+'" fill="#fff"/>'};
+ var fadeOut=ph>.88?1-(ph-.88)/.12:1;
+ cue.setAttribute('opacity',(ca*fadeOut).toFixed(3));
+ cue.innerHTML='<line '+st1+' x1="'+f(ax)+'" y1="'+f(ay)+'" x2="'+f(bx)+'" y2="'+f(by)+'" stroke-opacity=".3" stroke-dasharray="2 6"/>'+dot(ax,ay)+dot(bx,by)+
+  '<path '+st1+' stroke-opacity=".85" d="'+arrow(CX-w*k,CY+w*k,-k,k,z)+arrow(CX+w*k,CY-w*k,k,-k,z)+'"/>';
+}
+var P=new Map(),g=null,idleAt=0,cT=1;
+function pts(){return Array.from(P.values())}
+function begin(){var a=pts();g=a.length>=2?{d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}:null}
+st.addEventListener('pointerdown',function(e){if(done)return;st.focus({preventScroll:true});P.set(e.pointerId,{x:e.clientX,y:e.clientY});try{st.setPointerCapture(e.pointerId)}catch(_){}begin()});
+st.addEventListener('pointermove',function(e){if(!P.has(e.pointerId))return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});var a=pts();
+ if(a.length>=2&&g){var d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);push((d-g.d)*kk()*1.8);g.d=d}});
+function up(e){P.delete(e.pointerId);begin()}
+st.addEventListener('pointerup',up);st.addEventListener('pointercancel',up);
+st.addEventListener('wheel',function(e){e.preventDefault();push(-e.deltaY*(e.ctrlKey?1.6:.35))},{passive:false});
+st.addEventListener('keydown',function(e){if(e.key==='+'||e.key==='='||e.key==='ArrowUp'){e.preventDefault();push(18)}else if(e.key==='-'||e.key==='_'||e.key==='ArrowDown'){e.preventDefault();push(-18)}});
+var rs=document.getElementById('rs');
+rs.addEventListener('pointerdown',function(e){e.stopPropagation()});
+rs.addEventListener('keydown',function(e){e.stopPropagation()});
+rs.addEventListener('click',function(){t=0;done=false;st.classList.remove('done');P.clear();g=null});
+var last=performance.now();
+function tick(now){
+ var dt=Math.min(.05,(now-last)/1000);last=now;
+ c+=(t-c)*(1-Math.pow(.0009,dt)); /* silky ease toward the pinch */
+ if(Math.abs(t-c)<.05)c=t;
+ draw();
+ ca+=(((!done&&t<4&&!P.size)?1:0)-ca)*(1-Math.pow(.02,dt));
+ drawCue(now);
+ requestAnimationFrame(tick);
+}
+draw();requestAnimationFrame(tick);
+})();
+</script>
+
+</body></html>
