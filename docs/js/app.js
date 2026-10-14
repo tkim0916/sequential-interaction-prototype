@@ -38,7 +38,7 @@ var DEF={
   mShow:true,mLayers:3,mHeight:100,mDrift:30,
   cShow:true,cCount:3,cSize:100,cSpeed:12,cOpacity:80,
   bShow:true,bCount:3,bSpan:14,bSpeed:45,bFlap:3,
-  colorOn:false,skyC:'#7fb2e0',mountC:'#5d7f52',cloudC:'#ffffff',bodyC:'#ffcf5a',birdC:'#2b2b2b',colorAmt:100,
+  colorOn:false,skyC:'#7fb2e0',mountC:'#5d7f52',seaC:'#3f7396',cloudC:'#ffffff',sunC:'#ffcf5a',moonC:'#e6e9f2',birdC:'#2b2b2b',colorAmt:100,
   texture:'None',texOn:'Whole scene',texAmt:35,texScale:3,
   speed:100,variation:30,easing:'Linear',cycle:3.2
 };
@@ -133,8 +133,8 @@ function build(s){
   if(T.stars)P.stars.forEach(function(st){h+='<circle cx="'+f1(st[0])+'" cy="'+f1(st[1])+'" r="'+f1(st[2])+'" fill="'+tone(.97)+'" opacity="'+st[3].toFixed(2)+'"/>'});
   var br=T.r[0]+P.bodyK*(T.r[1]-T.r[0]),by=T.y[0]+P.bodyY*(T.y[1]-T.y[0]);
   h+='<g class="body">'+(T.body==='moon'
-    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'bodyC')+'"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="'+tone(T.bodyV-.1,'bodyC')+'"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="'+tone(T.bodyV-.07,'bodyC')+'"/>'
-    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'bodyC')+'"/>')+'</g>';
+    ?'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'moonC')+'"/><circle cx="'+f1(-br*.3)+'" cy="'+f1(by-br*.2)+'" r="'+f1(br*.22)+'" fill="'+tone(T.bodyV-.1,'moonC')+'"/><circle cx="'+f1(br*.35)+'" cy="'+f1(by+br*.3)+'" r="'+f1(br*.14)+'" fill="'+tone(T.bodyV-.07,'moonC')+'"/>'
+    :'<circle cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+tone(T.bodyV,'sunC')+'"/>')+'</g>';
   if(prm.cShow)for(i=0;i<prm.cCount;i++){
     var c=P.clouds[i],w=prm.cSize*c.k;
     h+='<g class="cl" fill="'+tone(T.cloud,'cloudC')+'" opacity="'+(prm.cOpacity/100).toFixed(2)+'"><ellipse rx="'+f1(w/2)+'" ry="'+f1(w*.14)+'"/><circle cx="'+f1(-w*.18)+'" cy="'+f1(-w*.08)+'" r="'+f1(w*(.14+.06*c.b[0]))+'"/><circle cx="'+f1(w*.05)+'" cy="'+f1(-w*.13)+'" r="'+f1(w*(.18+.06*c.b[1]))+'"/><circle cx="'+f1(w*.24)+'" cy="'+f1(-w*.05)+'" r="'+f1(w*(.11+.05*c.b[2]))+'"/></g>';
@@ -142,7 +142,7 @@ function build(s){
   if(prm.mShow)for(i=3-prm.mLayers;i<3;i++){
     var amp=T.amp[i]*prm.mHeight/100;
     var d=T.sea?wave(rng(P.ridge[i]),T.base[i],amp):ridge(rng(P.ridge[i]),T.base[i],amp,T.sharp);
-    h+='<g class="lay" data-i="'+i+'"><path fill="'+tone(T.fills[i],'mountC')+'" d="'+d+'"/>'+(tex&&prm.texOn==='Mountains'?texShape(tx,d):'')+'</g>';
+    h+='<g class="lay" data-i="'+i+'"><path fill="'+tone(T.fills[i],T.sea?'seaC':'mountC')+'" d="'+d+'"/>'+(tex&&prm.texOn==='Mountains'?texShape(tx,d):'')+'</g>';
   }
   if(tex&&prm.texOn==='Whole scene')h+=texShape(tx);
   if(prm.bShow)for(i=0;i<prm.bCount;i++)h+='<path class="bd" fill="none" stroke="'+tone(T.bird,'birdC')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -502,9 +502,11 @@ var GROUPS=[
   {name:'Color',items:[
     {key:'colorOn',label:'Use color',type:'toggle',note:'Off keeps the studies’ grayscale. Picking a color turns it on.'},
     {key:'skyC',label:'Sky',type:'color'},
-    {key:'mountC',label:'Mountains & sea',type:'color'},
+    {key:'mountC',label:'Mountains',type:'color'},
+    {key:'seaC',label:'Sea',type:'color'},
     {key:'cloudC',label:'Clouds',type:'color'},
-    {key:'bodyC',label:'Sun & moon',type:'color'},
+    {key:'sunC',label:'Sun',type:'color'},
+    {key:'moonC',label:'Moon',type:'color'},
     {key:'birdC',label:'Birds',type:'color'},
     {key:'colorAmt',label:'Color strength',min:0,max:100,step:5,unit:'%',note:'Light and shade still follow each scene’s grays'}]},
   {name:'Texture',items:[
