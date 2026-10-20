@@ -24,7 +24,7 @@ https://tkim0916.github.io/sequential-interaction-prototype/
    - **View wall** shows everything pinned so far.
 5. **Pin to the wall** (Study 03, Magnet Wall). Pinning a photo carries it to the wall in the white magnetic hand. Drag it up to pin it, or use the arrow keys and Enter. You then return to the camera.
 
-A hint bar at the top of the stage always shows the action needed to move on.
+A hint bar at the top of the stage shows the action needed to move on. Each hint disappears once that action has been done, and after the whole tutorial (open, zoom, shoot, open the gallery, view a photo, pin one) no hints appear. This is remembered in the browser, and **Show tips again** in the camera panel brings the hints back.
 
 There's no fixed ending. The restart button (top left) goes back to the film choice and clears the gallery and wall.
 

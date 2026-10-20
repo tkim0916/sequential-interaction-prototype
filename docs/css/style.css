@@ -291,3 +291,5 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 .lightbox .gbtn{background:#232327;color:#f1f1f3;border-color:#3a3a40}
 @media (prefers-reduced-motion:reduce){.lb-arrow{animation:none}}
 .shutter .ring{stroke-width:6}.shutter .chk{stroke-width:7}
+#cTips{grid-column:1/-1}
+.lb-hint[hidden],.ghint[hidden]{display:none}

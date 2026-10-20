@@ -282,6 +282,7 @@ stage.addEventListener('keydown',function(e){
 });
 function frameReady(){
   P.clear();pinch=null;
+  learn('open');
   setStatus('Camera ready');setHint('');
   later(900,function(){goStep(2)});
 }
@@ -349,7 +350,7 @@ function lensMarkup(id,v){
 function dofMarkup(id,std){return '<filter id="'+id+'" x="-10%" y="-10%" width="120%" height="120%">'+(std>.05?'<feGaussianBlur stdDeviation="'+std.toFixed(2)+'"/>':'<feOffset/>')+'</filter>'}
 function updateLens(){lastDof=dofStd();$('liveDefs').innerHTML=lensMarkup('lens',lensVals(false))+dofMarkup('dof',lastDof)}
 function zoomTf(){return 'translate('+CX+' '+CY+') scale('+zoomC.toFixed(4)+') translate('+(-CX)+' '+(-CY)+')'}
-function setZoom(z){camS.zoom=clamp(z,1,10);syncCam()}
+function setZoom(z){camS.zoom=clamp(z,1,10);syncCam();if(step===2&&!learned.zoom){learn('zoom');if(camState==='idle')camHint()}}
 function settingsText(){return shLabel(camS.sh)+' · '+apLabel(camS.ap)+' · ISO '+ISO[camS.iso]+' · '+zLabel(camS.zoom)}
 function readyText(){return 'Ready · '+settingsText()}
 function photoCount(){return photos.length+' photo'+(photos.length===1?'':'s')}
@@ -375,7 +376,7 @@ function render(p,full){
 }
 function capture(){
   if(step!==2||camState!=='idle')return;
-  camState='capturing';moving=false;
+  camState='capturing';moving=false;learn('shutter');
   click();
   disc.setAttribute('r','34');
   hint.style.display='none';
@@ -389,7 +390,7 @@ function capture(){
     photos.push({id:capN+1,svg:snapshot(),film:film,info:settingsText(),wall:null});
     updateGalBtn();
     setStatus('Captured · '+settingsText()+' · saved to gallery');
-    setHint('Saved · tap the gallery button (bottom right) to see your photos');
+    setHint('Saved · tap the gallery button (bottom right) to see your photos','gallery');
     later(1200,nextShot);
   });
 }
@@ -416,7 +417,7 @@ var zoomsEl=$('zooms'),apStrip=$('apStrip'),apBtn=$('apBtn');
 zoomsEl.innerHTML=ZOOMS.map(function(z){return '<button type="button" role="radio" data-z="'+z+'">'+z+'x</button>'}).join('');
 apStrip.innerHTML=AP.map(function(a,i){return '<button type="button" role="radio" data-ap="'+i+'">ƒ/'+a+'</button>'}).join('');
 zoomsEl.addEventListener('click',function(e){var b=e.target.closest('[data-z]');if(b)setZoom(+b.getAttribute('data-z'))});
-apStrip.addEventListener('click',function(e){var b=e.target.closest('[data-ap]');if(b){camS.ap=+b.getAttribute('data-ap');syncCam()}});
+apStrip.addEventListener('click',function(e){var b=e.target.closest('[data-ap]');if(b){camS.ap=+b.getAttribute('data-ap');learn('aperture');syncCam();camHint()}});
 shutter.addEventListener('pointerdown',function(e){e.stopPropagation()});
 function setStrip(open){
   apStrip.classList.toggle('open',open);apBtn.setAttribute('aria-expanded',open?'true':'false');
@@ -424,11 +425,34 @@ function setStrip(open){
 }
 /* hint bar: the action the user must take next */
 var hintPill=$('hintPill');
-function setHint(t){hintPill.textContent=t;hintPill.classList.toggle('show',!!t)}
+/* Tutorial: each hint goes away once its action has been done; after the whole tutorial
+   (open, zoom, shoot, gallery, view, pin) no hints are shown. Remembered per browser. */
+var TUTORIAL=['open','zoom','shutter','gallery','view','pin'],TIPS_KEY='capturePin.learned',learned={};
+try{learned=JSON.parse(localStorage.getItem(TIPS_KEY))||{}}catch(_){learned={}}
+function tutorialDone(){return TUTORIAL.every(function(k){return learned[k]})}
+function learn(k){
+  if(learned[k])return;
+  learned[k]=1;
+  try{localStorage.setItem(TIPS_KEY,JSON.stringify(learned))}catch(_){}
+  refreshTips();
+}
+function refreshTips(){
+  var done=tutorialDone();
+  document.querySelector('.ghint').hidden=done||(learned.view&&learned.pin);
+  document.querySelector('.lb-hint').hidden=done||learned.swipe;
+  if(done)setHint('');
+}
+function setHint(t,k){
+  if(tutorialDone()||(k&&learned[k]))t='';
+  hintPill.textContent=t;hintPill.classList.toggle('show',!!t);
+}
 function camHint(){
-  setHint(apStrip.classList.contains('open')
-    ?'Tap an ƒ-stop to set the aperture · tap ƒ again to close'
-    :'Pinch with two fingers or scroll the mouse wheel to zoom in or out · tap the shutter to capture');
+  if(apStrip.classList.contains('open')){setHint('Tap an ƒ-stop to set the aperture · tap ƒ again to close','aperture');return}
+  var z=!learned.zoom,sh=!learned.shutter;
+  setHint(z&&sh?'Pinch with two fingers or scroll the mouse wheel to zoom in or out · tap the shutter to capture'
+    :z?'Pinch with two fingers or scroll the mouse wheel to zoom in or out'
+    :sh?'Tap the shutter to capture'
+    :photos.length&&!learned.gallery?'Tap the gallery button (bottom right) to see your photos':'');
 }
 apBtn.addEventListener('click',function(){setStrip(!apStrip.classList.contains('open'))});
 
@@ -446,7 +470,8 @@ cbody.innerHTML=
     crow('c-ap','Aperture',AP.length-1,'Wider (smaller ƒ) = brighter, blurrier background')+
     '<div class="prow"><div class="ptop"><span class="plab">Exposure meter</span><output id="cEv"></output></div><div class="meter" aria-hidden="true"><span id="cNeedle"></span></div><span class="pnote">−3 EV (dark) to +3 EV (bright)</span></div>'+
   '</fieldset>'+
-  '<div class="pactions"><button id="cReset" class="pbtn primary" type="button">Reset camera settings</button></div>';
+  '<div class="pactions"><button id="cReset" class="pbtn primary" type="button">Reset camera settings</button>'+
+  '<button id="cTips" class="pbtn" type="button" title="Show the step-by-step hints again">Show tips again</button></div>';
 function crow(id,label,max,note){
   return '<div class="prow"><div class="ptop"><label class="plab" for="'+id+'">'+label+'</label><output id="'+id+'-o"></output></div><input type="range" id="'+id+'" min="0" max="'+max+'" step="1"><span class="pnote" id="'+id+'-r"></span><span class="pnote">'+note+'</span></div>';
 }
@@ -462,6 +487,12 @@ cbody.addEventListener('input',function(e){
 });
 cbody.addEventListener('keydown',function(e){e.stopPropagation()});
 $('cReset').addEventListener('click',function(){camS=Object.assign({},CDEF);syncCam()});
+$('cTips').addEventListener('click',function(){
+  learned={};try{localStorage.removeItem(TIPS_KEY)}catch(_){}
+  refreshTips();
+  if(step===1)setHint('Pinch out with two fingers, scroll up, or press + to open the camera','open');
+  else if(step===2&&camState==='idle'&&!galOpen)camHint();
+});
 function setCpanel(open){
   cpanel.classList.toggle('collapsed',!open);
   ctoggle.setAttribute('aria-expanded',open?'true':'false');
@@ -526,7 +557,7 @@ function setFilm(f){
 }
 function openGallery(){
   if(step!==2)return;
-  galOpen=true;setStrip(false);renderGallery();syncFilmSwitch();gal.hidden=false;setHint('');
+  galOpen=true;learn('gallery');setStrip(false);renderGallery();syncFilmSwitch();gal.hidden=false;setHint('');
   setStatus('Gallery · tap a photo to view it, pin it to the wall, or delete it');
   $('galClose').focus({preventScroll:true});
 }
@@ -542,7 +573,7 @@ gal.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault
 /* --- lightbox: full-size photo; swipe or drag down to close --- */
 var lb=$('lightbox'),lbFig=$('lbFig'),lbFrom=null,lbDrag=null;
 function openLightbox(p,from){
-  lbFrom=from;
+  lbFrom=from;learn('view');
   $('lbImg').innerHTML=render(p,true);
   $('lbImg').setAttribute('aria-label','Photo '+p.id);
   $('lbCap').textContent=(p.film==='bw'?'B&W':'Color')+' · '+p.info;
@@ -553,6 +584,7 @@ function openLightbox(p,from){
   $('lbClose').focus({preventScroll:true});
 }
 function closeLightbox(){
+  learn('swipe');
   lb.classList.remove('open');
   lbFig.style.transition='transform .25s ease-in';lbFig.style.transform='translateY(110vh)';
   setTimeout(function(){lb.hidden=true;lbFig.style.transform='';if(lbFrom&&document.body.contains(lbFrom))lbFrom.focus({preventScroll:true})},RM?0:250);
@@ -643,7 +675,7 @@ function spawn(){
   held.setAttribute('aria-label','Photograph '+pinPhoto.id+'. Drag it onto the wall, or use the arrow keys to move it and Enter to pin it. Enter without moving pins it in the next spot.');
   setCount(wallCount());
   setStatus('Drag the photograph to the wall and let go to pin it');
-  setHint('Drag the photo up onto the wall and let go to pin it · or use the arrow keys, then Enter');
+  setHint('Drag the photo up onto the wall and let go to pin it · or use the arrow keys, then Enter','pin');
   tween(350,function(k){setHeld(HX,HY,0,0.6+0.4*k,3);held.style.opacity=k},function(){busy=false});
 }
 function pin(tx,ty){
@@ -657,7 +689,8 @@ function pin(tx,ty){
   held.style.opacity=0;linesEl.style.opacity=0;
   pinPhoto.wall=g;pinCount++;
   setCount(wallCount());
-  setStatus('Pinned to the wall · back to the camera');setHint('Pinned!');
+  learn('pin');
+  setStatus('Pinned to the wall · back to the camera');setHint('');
   later(1300,function(){goStep(2)});
 }
 function snapBack(x0,y0,r0){
@@ -668,7 +701,7 @@ function release(){
   drag=false;kbd=false;busy=true;
   held.style.cursor='grab';
   var x0=cx,y0=cy,r0=clamp((cx-HX)/18,-9,9);
-  if(cy>250){snapBack(x0,y0,r0);setHint('Not high enough · drag the photo further up onto the wall')}
+  if(cy>250){snapBack(x0,y0,r0);setHint('Not high enough · drag the photo further up onto the wall','pin')}
   else{
     var tx=clamp(x0,70,610),ty=clamp(y0,80,200),r1=rots[pinCount%rots.length];
     tween(180,function(k){setHeld(x0+(tx-x0)*k,y0+(ty-y0)*k,r0+(r1-r0)*k,1.06-0.06*k,8-6*k)},function(){pin(tx,ty)});
@@ -879,7 +912,7 @@ function goStep(n){
   stage.setAttribute('aria-label',n===0?'Choose your film.':n===1?'Black screen. Pinch out with two fingers, scroll, or press plus to open the camera frame.':n===2?'Camera. Zoom with the chips, a pinch, or the plus and minus keys, then press the shutter.':'Wall.');
   shutter.setAttribute('tabindex',n===2?'0':'-1');
   held.setAttribute('tabindex',n===3&&wallMode==='pin'?'0':'-1');
-  setHint(n===1?'Pinch out with two fingers, scroll up, or press + to open the camera':'');
+  setHint(n===1?'Pinch out with two fingers, scroll up, or press + to open the camera':'','open');
   if(n===0){
     setCount('Choose film');
     setStatus('Select a film to continue');
@@ -901,7 +934,7 @@ function goStep(n){
     busy=true;held.style.opacity=0;linesEl.style.opacity=0;
     setCount(wallCount());
     setStatus('Your wall');
-    setHint('This is your wall · press Back to camera to keep shooting');
+    setHint('This is your wall · press Back to camera to keep shooting','wall');
     moreBtn.hidden=false;focusInStage(moreBtn);
   }
 }
@@ -923,7 +956,7 @@ function restart(){
 $('restart').addEventListener('pointerdown',function(e){e.stopPropagation()});
 $('restart').addEventListener('keydown',function(e){e.stopPropagation()});
 $('restart').addEventListener('click',restart);
-moreBtn.addEventListener('click',function(){goStep(2)});
+moreBtn.addEventListener('click',function(){learn('wall');goStep(2)});
 
 var last=null;
 function tick(now){
@@ -940,6 +973,7 @@ newScene(true);
 setHeld(HX,HY,0,1,3);
 syncCam();
 setCpanel(window.matchMedia('(min-width: 1100px)').matches);
+refreshTips();
 goStep(0);
 draw();
 requestAnimationFrame(tick);
