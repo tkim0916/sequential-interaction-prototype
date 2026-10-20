@@ -588,7 +588,7 @@ function closeLightbox(){
   lb.classList.remove('open');
   lbFig.style.transition='transform .25s ease-in';lbFig.style.transform='translateY(110vh)';
   setTimeout(function(){lb.hidden=true;lbFig.style.transform='';if(lbFrom&&document.body.contains(lbFrom))lbFrom.focus({preventScroll:true})},RM?0:250);
-  setStatus('Gallery · tap a photo to view it, pin it to the wall, or delete it');
+  setStatus(step===3?'Your wall':'Gallery · tap a photo to view it, pin it to the wall, or delete it');
 }
 lbFig.addEventListener('pointerdown',function(e){
   lbDrag={y:e.clientY,t:performance.now(),dy:0};
@@ -687,6 +687,8 @@ function pin(tx,ty){
   var pn=g.querySelector('.pn');
   tween(RM?1:260,function(k){pn.setAttribute('transform','translate(0 '+(-60-(1-k)*16)+') scale('+(1+(1-k)*0.7)+')')});
   held.style.opacity=0;linesEl.style.opacity=0;
+  g.setAttribute('class','pin-photo');g.setAttribute('data-id',pinPhoto.id);
+  g.setAttribute('role','button');g.setAttribute('aria-label','View pinned photo '+pinPhoto.id+' full size');
   pinPhoto.wall=g;pinCount++;
   setCount(wallCount());
   learn('pin');
@@ -913,6 +915,9 @@ function goStep(n){
   shutter.setAttribute('tabindex',n===2?'0':'-1');
   held.setAttribute('tabindex',n===3&&wallMode==='pin'?'0':'-1');
   setHint(n===1?'Pinch out with two fingers, scroll up, or press + to open the camera':'','open');
+  pinned.querySelectorAll('.pin-photo').forEach(function(g){g.setAttribute('tabindex',n===3&&wallMode==='view'?'0':'-1')});
+  pinned.classList.toggle('viewing',n===3&&wallMode==='view');
+  held.style.pointerEvents=n===3&&wallMode==='pin'?'':'none';
   if(n===0){
     setCount('Choose film');
     setStatus('Select a film to continue');
@@ -934,7 +939,7 @@ function goStep(n){
     busy=true;held.style.opacity=0;linesEl.style.opacity=0;
     setCount(wallCount());
     setStatus('Your wall');
-    setHint('This is your wall · press Back to camera to keep shooting','wall');
+    setHint('Tap a pinned photo to see it full size · press Back to camera to keep shooting','wall');
     moreBtn.hidden=false;focusInStage(moreBtn);
   }
 }
@@ -957,6 +962,17 @@ $('restart').addEventListener('pointerdown',function(e){e.stopPropagation()});
 $('restart').addEventListener('keydown',function(e){e.stopPropagation()});
 $('restart').addEventListener('click',restart);
 moreBtn.addEventListener('click',function(){learn('wall');goStep(2)});
+/* on the wall (View wall), a pinned photo opens full size like in the gallery */
+function wallPhoto(e){
+  if(step!==3||wallMode!=='view')return null;
+  var g=e.target.closest&&e.target.closest('.pin-photo');if(!g)return null;
+  var id=+g.getAttribute('data-id');return {g:g,p:photos.filter(function(x){return x.id===id})[0]};
+}
+pinned.addEventListener('click',function(e){var w=wallPhoto(e);if(w&&w.p)openLightbox(w.p,w.g)});
+pinned.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  var w=wallPhoto(e);if(w&&w.p){e.preventDefault();openLightbox(w.p,w.g)}
+});
 
 var last=null;
 function tick(now){

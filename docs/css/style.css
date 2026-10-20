@@ -293,3 +293,7 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 .shutter .ring{stroke-width:6}.shutter .chk{stroke-width:7}
 #cTips{grid-column:1/-1}
 .lb-hint[hidden],.ghint[hidden]{display:none}
+#pinned.viewing .pin-photo{cursor:zoom-in}
+#pinned.viewing .pin-photo:hover{filter:brightness(1.04)}
+.pin-photo{outline:none}
+.pin-photo:focus-visible>rect:first-child{stroke:var(--accent);stroke-width:4}
