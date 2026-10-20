@@ -604,6 +604,12 @@ lbFig.addEventListener('pointermove',function(e){
   var dy=e.clientY-lbDrag.y;lbDrag.dy=dy;
   lbFig.style.transform='translateY('+(dy>0?dy:dy*.2).toFixed(1)+'px) scale('+(1-clamp(dy,0,400)/2000).toFixed(3)+')';
   lb.style.setProperty('--fade',(1-clamp(dy,0,300)/400).toFixed(3));
+  /* dragged far enough down: close right away, without waiting for the release */
+  if(dy>=clamp(window.innerHeight*.28,140,260)){
+    lbDrag=null;
+    try{lbFig.releasePointerCapture(e.pointerId)}catch(_){}
+    closeLightbox();
+  }
 });
 function lbEnd(){
   if(!lbDrag)return;
