@@ -16,9 +16,15 @@ https://tkim0916.github.io/sequential-interaction-prototype/
    - **Zoom:** tap the on-screen chips (1x, 1.5x, 2x, 5x, 10x), pinch with two fingers, scroll, or press `+`/`−`.
    - **Aperture:** the **ƒ** button slides up a strip of aperture stops.
    - **Camera settings** (right panel): focal length, ISO, shutter speed, aperture, and an exposure meter. 1/250 s · ƒ/2.8 · ISO 100 is the correct exposure. Higher ISO adds grain, slower shutter speeds add motion blur to the photo, and wider apertures blur the background.
-   - **Shutter:** click it (or press Enter/Space) to capture. Every photo is saved to the gallery, and there is no limit.
-4. **Gallery.** After the first shot, a thumbnail button opens the gallery. Each photo can be **pinned** or **deleted** (tap twice to confirm), and **View wall** shows everything pinned so far.
-5. **Pin to the wall** (Study 03, Magnet Wall). Pinning a photo carries it to the wall in the magnetic hand. Drag it up to pin it, or use the arrow keys and Enter. You then return to the camera.
+   - **Shutter:** a single circle at the bottom center. Click it (or press Enter/Space) to capture. Every photo is saved to the gallery, and there is no limit.
+4. **Gallery.** After the first shot, a thumbnail button opens the gallery.
+   - Tap a photo to see it full size, then swipe or drag it down (or press Escape) to close it.
+   - Each photo can be **pinned** or **deleted** (tap twice to confirm).
+   - A **Film** switch changes Color or B&W for the next photos.
+   - **View wall** shows everything pinned so far.
+5. **Pin to the wall** (Study 03, Magnet Wall). Pinning a photo carries it to the wall in the white magnetic hand. Drag it up to pin it, or use the arrow keys and Enter. You then return to the camera.
+
+A hint bar at the top of the stage always shows the action needed to move on.
 
 There's no fixed ending. The restart button (top left) goes back to the film choice and clears the gallery and wall.
 

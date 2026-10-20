@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Capture &amp; Pin</title>
 <meta name="description" content="A sequence interaction prototype: load film, open the camera, set zoom and exposure, capture photos, and pin them from your gallery to the wall.">
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 <aside id="panel" class="panel" aria-label="Step 2 background controls">
@@ -42,6 +42,8 @@
     <svg id="svg" viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity=".35"/></filter>
+        <!-- white magnetic hand: a thin gray outline and soft shadow keep it visible on the pale wall -->
+        <filter id="edge" x="-15%" y="-15%" width="130%" height="130%"><feMorphology in="SourceAlpha" operator="dilate" radius="1.4" result="d"/><feFlood flood-color="#8e8e96"/><feComposite in2="d" operator="in" result="o"/><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dy="3" result="b"/><feFlood flood-color="#000" flood-opacity=".18"/><feComposite in2="b" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
       <!-- live lens: exposure, film, grain (#lens) and depth of field (#dof), rebuilt from the camera settings -->
       <defs id="liveDefs"></defs>
@@ -55,24 +57,6 @@
       <g id="fr" class="layer"></g>
       <g id="cue" class="layer" pointer-events="none"></g>
 
-      <!-- Step 2: Sharp Shutter -->
-      <g id="cam" class="layer off">
-        <g id="br" filter="url(#sh)">
-          <g id="b1" class="brk" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
-            <path d="M240 163 L240 135 L268 135"/><path d="M412 135 L440 135 L440 163"/><path d="M440 307 L440 335 L412 335"/><path d="M268 335 L240 335 L240 307"/>
-          </g>
-          <g id="b2" class="brk" stroke-width="1.5" stroke-linecap="square">
-            <path d="M240 235 H252"/><path d="M440 235 H428"/><path d="M340 135 V147"/><path d="M340 335 V323"/>
-          </g>
-        </g>
-        <circle id="hint" class="ping" cx="340" cy="235" r="52"/>
-        <g id="shutter" role="button" tabindex="-1" aria-label="Shutter: capture photo">
-          <circle id="hit" cx="340" cy="235" r="62" fill="transparent"/>
-          <circle class="ring" cx="340" cy="235" r="52" filter="url(#sh)"/>
-          <circle id="disc" class="disc" cx="340" cy="235" r="40"/>
-          <path id="chk" class="chk" d="M323 236 L335 248 L359 222" opacity="0"/>
-        </g>
-      </g>
 
       <!-- Step 3: Magnet Wall -->
       <g id="wallg" class="layer off">
@@ -81,7 +65,7 @@
           <line x1="0" y1="60" x2="680" y2="60"/><line x1="0" y1="120" x2="680" y2="120"/><line x1="0" y1="180" x2="680" y2="180"/><line x1="0" y1="240" x2="680" y2="240"/><line x1="0" y1="300" x2="680" y2="300"/><line x1="0" y1="360" x2="680" y2="360"/><line x1="0" y1="420" x2="680" y2="420"/>
         </g>
         <g id="pinned"></g>
-        <g transform="translate(0 80)">
+        <g transform="translate(0 80)" filter="url(#edge)">
           <g class="hand-s" stroke-width="20" stroke-linecap="round" fill="none">
             <line id="hf0" x1="308" y1="300" x2="306" y2="226"/>
             <line id="hf1" x1="330" y1="300" x2="330" y2="206"/>
@@ -100,6 +84,9 @@
         </g>
       </g>
     </svg>
+
+    <!-- the next action to take, for every step -->
+    <div id="hintPill" class="hintpill" aria-hidden="true"></div>
 
     <!-- Step 0: film choice -->
     <div id="film" class="film" role="group" aria-labelledby="filmTitle">
@@ -125,12 +112,21 @@
     <!-- Step 3 camera controls on the main screen -->
     <div id="camui" class="camui" hidden>
       <div id="apStrip" class="apstrip" role="radiogroup" aria-label="Aperture"></div>
+      <div class="zoomrow"><div id="zooms" class="zooms" role="radiogroup" aria-label="Zoom"></div></div>
       <div class="cambar">
         <button id="apBtn" class="apbtn" type="button" aria-expanded="false" aria-controls="apStrip" title="Aperture">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3l3.5 7.5M21 12l-8 .5M16.5 19.8L12 13M7.5 19.8l3-7M3 12h8M7.5 4.2L12 11"/></svg>
           <span id="apLabel">ƒ/2.8</span>
         </button>
-        <div id="zooms" class="zooms" role="radiogroup" aria-label="Zoom"></div>
+        <!-- Sharp Shutter: just the circle, at the bottom center -->
+        <button id="shutter" class="shutter" type="button" aria-label="Shutter: capture photo">
+          <svg viewBox="0 0 140 140" aria-hidden="true">
+            <circle id="hint" class="ping" cx="70" cy="70" r="52"/>
+            <circle class="ring" cx="70" cy="70" r="52"/>
+            <circle id="disc" class="disc" cx="70" cy="70" r="40"/>
+            <path id="chk" class="chk" d="M53 71 L65 83 L89 57" opacity="0"/>
+          </svg>
+        </button>
         <button id="galBtn" class="galbtn" type="button" hidden>
           <svg id="galThumb" viewBox="-46 -58 92 92" aria-hidden="true"></svg>
           <span id="galCount" class="badge">0</span>
@@ -141,7 +137,15 @@
     <!-- Gallery -->
     <div id="gallery" class="gallery" role="dialog" aria-modal="true" aria-labelledby="galTitle" hidden>
       <div class="ghead">
-        <h2 id="galTitle">Gallery</h2>
+        <div class="gtitle">
+          <h2 id="galTitle">Gallery</h2>
+          <p class="ghint">Tap a photo to see it full size. Use <b>Pin to wall</b> or <b>Delete</b> under each photo.</p>
+        </div>
+        <div class="gfilm" role="radiogroup" aria-label="Film for your next photos">
+          <span>Film</span>
+          <button type="button" role="radio" data-gfilm="color">Color</button>
+          <button type="button" role="radio" data-gfilm="bw">B&amp;W</button>
+        </div>
         <div class="gtools">
           <button id="galWall" class="gbtn" type="button">View wall</button>
           <button id="galClose" class="gbtn primary" type="button">Back to camera</button>
@@ -160,6 +164,15 @@
     <button id="more" class="text-btn" type="button" hidden>Back to camera</button>
   </div>
 </main>
-<script src="js/app.js?v=8"></script>
+<!-- full-size photo; swipe or drag down to close -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Full-size photo" hidden>
+  <p class="lb-hint"><span class="lb-arrow" aria-hidden="true">↓</span> Swipe or drag the photo down to close</p>
+  <figure id="lbFig" class="lb-fig">
+    <svg id="lbImg" viewBox="0 0 680 470" role="img" aria-label="Photo"></svg>
+    <figcaption id="lbCap"></figcaption>
+  </figure>
+  <button id="lbClose" class="gbtn" type="button">Close</button>
+</div>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>
