@@ -33,7 +33,7 @@ There's no fixed ending. The restart button (top left) goes back to the film cho
 - mountains, clouds and birds
 - color for the sky, mountains, sea, clouds, sun, moon and birds
 - texture: Grain, Paper, Halftone or Lines
-- speed and motion: the Linear, Ease In, Ease Out and Ease In-Out curves, and the scene-change interval
+- speed and motion: overall speed, speed variation, and the scene-change interval
 
 Its buttons are **Reset state**, **Restore defaults** and **Copy as prompt**.
 

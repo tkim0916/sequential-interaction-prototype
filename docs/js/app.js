@@ -41,18 +41,9 @@ var DEF={
   bShow:true,bCount:3,bSpan:14,bSpeed:45,bFlap:3,
   colorOn:false,skyC:'#7fb2e0',mountC:'#5d7f52',seaC:'#3f7396',cloudC:'#ffffff',sunC:'#ffcf5a',moonC:'#e6e9f2',birdC:'#2b2b2b',colorAmt:100,
   texture:'None',texOn:'Whole scene',texAmt:35,texScale:3,
-  speed:100,variation:30,easing:'Linear',cycle:3.2
+  speed:100,variation:30,cycle:3.2
 };
 var prm=Object.assign({},DEF);
-var EASE={
-  'Linear':function(x){return x},
-  'Ease In':function(x){return x*x*x},
-  'Ease Out':function(x){return 1-Math.pow(1-x,3)},
-  'Ease In-Out':function(x){return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2}
-};
-/* eased clock: within each scene-change cycle the drift follows the chosen curve,
-   covering the same distance per cycle as Linear */
-function eased(t){var P=prm.cycle,n=Math.floor(t/P);return P*(n+EASE[prm.easing](t/P-n))}
 /* gray value 0 (black) – 1 (white) -> CSS colour. Grayscale like the studies by default; with
    "Use color" on, the element's picked hue and saturation are applied while the gray value keeps
    the light/dark structure (a luminosity blend). */
@@ -160,7 +151,7 @@ function build(s){
   moveScene(s,0);
 }
 function moveScene(s,dt){
-  var P=s.plan,dE=dt?eased(s.time+dt)-eased(s.time):0;s.time+=dt;
+  var P=s.plan,dE=dt;s.time+=dt; /* steady drift */
   var sm=prm.speed/100*calm,va=prm.variation/100;
   function v(base,rv){return base*(1+va*(2*rv-1))*sm} /* per-element speed: ± variation around the base */
   s.lays.forEach(function(el){
@@ -198,7 +189,7 @@ function updateWorld(dt){
   var top=scenes[scenes.length-1];
   if(top.fade<1){
     top.fade=Math.min(1,top.fade+dt/(RM?.2:.7));
-    top.g.setAttribute('opacity',EASE[prm.easing](top.fade).toFixed(3));
+    top.g.setAttribute('opacity',top.fade.toFixed(3));
     if(top.fade>=1){while(scenes.length>1)world.removeChild(scenes.shift().g);top.g.removeAttribute('opacity')}
   }
 }
@@ -828,7 +819,6 @@ var GROUPS=[
   {name:'Speed & motion',items:[
     {key:'speed',label:'Overall speed',min:0,max:300,step:5,unit:'%',motion:true},
     {key:'variation',label:'Speed variation',min:0,max:100,step:5,pre:'±',unit:'%',motion:true,note:'Random spread per mountain layer, cloud and bird'},
-    {key:'easing',label:'Motion curve',type:'choice',options:['Linear','Ease In','Ease Out','Ease In-Out'],motion:true,note:'Applied to each scene-change cycle and to the crossfade'},
     {key:'cycle',label:'Scene change every',min:1,max:10,step:.1,unit:'s',motion:true}]}
 ];
 var panel=$('panel'),panelBody=$('panelBody'),panelToggle=$('panelToggle'),copyBtn=$('copyPrompt'),ctl={};
