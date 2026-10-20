@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Capture &amp; Pin</title>
-<meta name="description" content="A sequence interaction prototype: open the camera, capture three moments, and pin the photos to the wall.">
-<link rel="stylesheet" href="css/style.css?v=6">
+<meta name="description" content="A sequence interaction prototype: load film, open the camera, set zoom and exposure, capture photos, and pin them from your gallery to the wall.">
+<link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
 <aside id="panel" class="panel" aria-label="Step 2 background controls">
-  <button id="panelToggle" class="ptoggle" type="button" aria-expanded="true" aria-controls="panelBody">
+  <button id="panelToggle" class="ptoggle" type="button" aria-expanded="true" aria-controls="panelBody" aria-label="Background controls">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
     <span>Background controls</span>
   </button>
@@ -24,6 +24,14 @@
   </div>
 </aside>
 
+<aside id="cpanel" class="panel right" aria-label="Camera settings" hidden>
+  <button id="cpanelToggle" class="ptoggle" type="button" aria-expanded="true" aria-controls="cpanelBody" aria-label="Camera settings">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    <span>Camera settings</span>
+  </button>
+  <div id="cpanelBody" class="pbody"></div>
+</aside>
+
 <main class="wrap">
   <header class="head">
     <h1>Capture &amp; Pin</h1>
@@ -35,10 +43,12 @@
       <defs>
         <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity=".35"/></filter>
       </defs>
+      <!-- live lens: exposure, film, grain (#lens) and depth of field (#dof), rebuilt from the camera settings -->
+      <defs id="liveDefs"></defs>
       <rect width="680" height="470" fill="#000"/>
 
       <!-- Steps 1–2: the drifting, randomly changing landscape (from Study 02) -->
-      <g id="world" class="layer"></g>
+      <g id="worldL" class="layer" filter="url(#lens)"><g id="world"></g></g>
       <rect id="flash" width="680" height="470" fill="#fff" style="opacity:0"/>
 
       <!-- Step 1: Silky Frame Reveal -->
@@ -91,6 +101,55 @@
       </g>
     </svg>
 
+    <!-- Step 0: film choice -->
+    <div id="film" class="film" role="group" aria-labelledby="filmTitle">
+      <p class="film-kicker">Step 1 · Load the camera</p>
+      <h2 id="filmTitle">Choose your film</h2>
+      <p class="film-sub">Click a roll to select it. The camera opens after you choose.</p>
+      <div class="film-opts">
+        <button type="button" class="film-card" data-film="color" aria-pressed="false">
+          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="8" y="14" width="64" height="52" rx="8" fill="#2b2b30"/><rect x="14" y="22" width="52" height="14" rx="3" fill="#e2593b"/><rect x="14" y="38" width="52" height="8" rx="2" fill="#f2b33d"/><rect x="14" y="48" width="52" height="8" rx="2" fill="#3f86c9"/><rect x="72" y="30" width="10" height="20" rx="2" fill="#555"/><path d="M82 34h30v12H82z" fill="#7a5a3a"/><path d="M86 34v12M92 34v12M98 34v12M104 34v12" stroke="#2b2b30" stroke-width="2"/></svg>
+          <span class="film-name">Color film</span>
+          <span class="film-desc">Full color: sky, sea and land in your palette</span>
+          <span class="film-pick">Select</span>
+        </button>
+        <button type="button" class="film-card" data-film="bw" aria-pressed="false">
+          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="8" y="14" width="64" height="52" rx="8" fill="#2b2b30"/><rect x="14" y="22" width="52" height="14" rx="3" fill="#e8e8e8"/><rect x="14" y="38" width="52" height="8" rx="2" fill="#9a9a9a"/><rect x="14" y="48" width="52" height="8" rx="2" fill="#5a5a5a"/><rect x="72" y="30" width="10" height="20" rx="2" fill="#555"/><path d="M82 34h30v12H82z" fill="#4a4a4a"/><path d="M86 34v12M92 34v12M98 34v12M104 34v12" stroke="#2b2b30" stroke-width="2"/></svg>
+          <span class="film-name">Black &amp; white film</span>
+          <span class="film-desc">Classic grayscale with deep contrast</span>
+          <span class="film-pick">Select</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3 camera controls on the main screen -->
+    <div id="camui" class="camui" hidden>
+      <div id="apStrip" class="apstrip" role="radiogroup" aria-label="Aperture"></div>
+      <div class="cambar">
+        <button id="apBtn" class="apbtn" type="button" aria-expanded="false" aria-controls="apStrip" title="Aperture">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3l3.5 7.5M21 12l-8 .5M16.5 19.8L12 13M7.5 19.8l3-7M3 12h8M7.5 4.2L12 11"/></svg>
+          <span id="apLabel">ƒ/2.8</span>
+        </button>
+        <div id="zooms" class="zooms" role="radiogroup" aria-label="Zoom"></div>
+        <button id="galBtn" class="galbtn" type="button" hidden>
+          <svg id="galThumb" viewBox="-46 -58 92 92" aria-hidden="true"></svg>
+          <span id="galCount" class="badge">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div id="gallery" class="gallery" role="dialog" aria-modal="true" aria-labelledby="galTitle" hidden>
+      <div class="ghead">
+        <h2 id="galTitle">Gallery</h2>
+        <div class="gtools">
+          <button id="galWall" class="gbtn" type="button">View wall</button>
+          <button id="galClose" class="gbtn primary" type="button">Back to camera</button>
+        </div>
+      </div>
+      <div id="galGrid" class="ggrid"></div>
+    </div>
+
     <button id="restart" class="icon-btn" type="button" aria-label="Restart from the beginning" title="Restart">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><polyline points="4 4.5 4.5 8.5 8.5 8"/></svg>
     </button>
@@ -98,9 +157,9 @@
 
   <div class="foot">
     <p id="status" class="hud" aria-live="polite"></p>
-    <button id="more" class="text-btn" type="button" hidden>Take more photos</button>
+    <button id="more" class="text-btn" type="button" hidden>Back to camera</button>
   </div>
 </main>
-<script src="js/app.js?v=6"></script>
+<script src="js/app.js?v=8"></script>
 </body>
 </html>

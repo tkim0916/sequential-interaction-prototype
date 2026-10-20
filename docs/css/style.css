@@ -145,3 +145,104 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 .pcv{display:flex;align-items:center;gap:8px}
 .pcv output{font:12px var(--mono);color:var(--fg-2);text-transform:uppercase}
 .pcol input[type=color]{width:36px;height:24px;padding:0 2px;border:1px solid var(--btn-border);border-radius:6px;background:var(--btn-bg);cursor:pointer}
+
+/* ---------- Right panel: camera settings ---------- */
+.panel.right{left:auto;right:max(16px,env(safe-area-inset-right,0px))}
+.panel[hidden]{display:none}
+@media (min-width:1100px){body.cpanel-open{padding-right:322px}}
+.cfilm{margin:2px 0 4px;font-weight:600}
+.seg5{grid-template-columns:repeat(5,1fr)}
+.seg5 span{padding:5px 2px;line-height:1.2}
+.seg5 small{display:block;font-size:10px;opacity:.7}
+.meter{position:relative;height:8px;margin:6px 0 2px;border-radius:4px;background:linear-gradient(90deg,#222,#888 50%,#eee)}
+.meter::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--fg-2)}
+.meter span{position:absolute;top:-4px;width:4px;height:16px;margin-left:-2px;border-radius:2px;background:var(--accent);transition:left .2s}
+
+/* ---------- Step 0: film choice ---------- */
+.film{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:56px 16px 16px;text-align:center;color:#f1f1f3;background:radial-gradient(circle at 50% 40%,#232327,#000 75%)}
+.film[hidden]{display:none}
+.film-kicker{margin:0;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#a2a2aa}
+.film h2{margin:0;font-size:clamp(18px,3.4vw,26px);font-weight:600}
+.film-sub{margin:0 0 8px;font-size:13px;color:#c9c9cf}
+.film-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(100%,460px)}
+.film-card{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 10px 14px;
+  border:2px solid #3a3a40;border-radius:12px;background:#18181b;color:inherit;font:inherit;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .2s;
+}
+.film-card svg{width:min(100%,120px);height:auto}
+.film-card:hover{transform:translateY(-3px);border-color:#a2a2aa;background:#202024}
+.film-card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.film-name{font-weight:600;font-size:15px}
+.film-desc{font-size:12px;color:#a2a2aa;line-height:1.35}
+.film-pick{margin-top:6px;padding:4px 14px;border-radius:999px;border:1px solid #74747c;font-size:12px;font-weight:500}
+.film-card:hover .film-pick{background:#f1f1f3;color:#131315;border-color:#f1f1f3}
+.film-card.chosen{border-color:#f1f1f3;background:#26262b;transform:translateY(-3px)}
+.film-card.chosen .film-pick{background:#f1f1f3;color:#131315;border-color:#f1f1f3}
+.film-card.dim{opacity:.35;pointer-events:none}
+.film-card.chosen{pointer-events:none}
+@media (max-width:620px){
+  .film{gap:3px;padding:46px 10px 10px}
+  .film-kicker,.film-desc{display:none}
+  .film h2{font-size:16px}
+  .film-sub{font-size:11px;margin-bottom:4px}
+  .film-opts{gap:8px}
+  .film-card{padding:6px 6px 8px;gap:2px}
+  .film-card svg{width:56px}
+  .film-name{font-size:13px}
+  .film-pick{margin-top:2px;padding:2px 10px;font-size:11px}
+}
+
+/* ---------- Step 2: on-screen camera controls ---------- */
+.camui{position:absolute;left:0;right:0;bottom:0;pointer-events:none}
+.camui[hidden]{display:none}
+.cambar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 12px}
+.cambar .apbtn{justify-self:start}.cambar .galbtn{justify-self:end;grid-column:3}
+.cambar>*,.apstrip{pointer-events:auto}
+.zooms{display:flex;gap:4px;padding:3px;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+.zooms button{min-width:36px;height:30px;padding:0 6px;border:0;border-radius:999px;background:transparent;color:#fff;font:600 12px var(--sans);cursor:pointer}
+.zooms button.on{background:#fff;color:#131315}
+.zooms button:focus-visible,.apbtn:focus-visible,.apstrip button:focus-visible,.galbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.apbtn{display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:0;border-radius:999px;background:rgba(0,0,0,.45);color:#fff;font:600 13px var(--sans);cursor:pointer;backdrop-filter:blur(4px)}
+.apbtn[aria-expanded="true"]{background:#fff;color:#131315}
+.apstrip{
+  display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 12px;margin:0 12px;
+  border-radius:12px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+  transform:translateY(16px);opacity:0;visibility:hidden;transition:transform .25s ease,opacity .25s ease,visibility .25s;
+}
+.apstrip.open{transform:none;opacity:1;visibility:visible}
+.apstrip button{flex:0 0 auto;scroll-snap-align:center;min-width:52px;height:32px;border:1px solid rgba(255,255,255,.35);border-radius:8px;background:transparent;color:#fff;font:500 13px var(--mono);cursor:pointer}
+.apstrip button.on{background:#fff;color:#131315;border-color:#fff}
+.galbtn{position:relative;width:44px;height:44px;padding:0;border:2px solid #fff;border-radius:8px;overflow:visible;background:#000;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.galbtn>svg{display:block;width:100%;height:100%;border-radius:6px}
+.galbtn .badge{position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font:600 11px/20px var(--sans)}
+.galbtn[hidden]{display:none}
+@media (max-width:520px){.zooms button{min-width:30px;height:26px;font-size:11px}.apbtn{height:30px;padding:0 9px;font-size:12px}.galbtn{width:36px;height:36px}.cambar{padding:6px 8px}}
+
+/* ---------- Gallery ---------- */
+.gallery{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;background:var(--surface);color:var(--fg)}
+.gallery[hidden]{display:none}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 12px 10px 60px;border-bottom:1px solid var(--line)}
+.ghead h2{margin:0;font-size:16px;font-weight:600}
+.gtools{display:flex;gap:6px}
+.ggrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;padding:14px}
+.gitem{margin:0;display:flex;flex-direction:column;gap:6px}
+.gitem>svg{width:100%;height:auto;filter:drop-shadow(0 2px 4px var(--shadow))}
+.gitem figcaption{font:11px var(--mono);color:var(--fg-2)}
+.gact{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.gbtn{font:500 12px var(--sans);padding:6px 10px;border-radius:8px;cursor:pointer;background:var(--btn-bg);color:var(--fg);border:1px solid var(--btn-border)}
+.gbtn:hover{border-color:var(--fg-2)}
+.gbtn:disabled{opacity:.45;cursor:default}
+.gbtn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.gbtn.del.confirm{background:#c0392b;color:#fff;border-color:#c0392b}
+.gbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.onwall{font-size:12px;font-weight:500;color:var(--fg-2)}
+.gempty{grid-column:1/-1;color:var(--fg-2);margin:24px 0;text-align:center}
+.icon-btn{z-index:3}
+@media (max-width:620px){
+  .ptoggle span{display:none}           /* the two panel tabs become icon buttons so they fit side by side */
+  .panel.collapsed .ptoggle{padding:10px}
+  .gallery{position:fixed;z-index:20;inset:0}
+  .ghead{padding-left:12px}
+  .ggrid{grid-template-columns:repeat(2,1fr)}
+}
