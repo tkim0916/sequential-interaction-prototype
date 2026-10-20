@@ -1,4 +1,4 @@
-/* Capture & Pin — one shared stage for all three steps.
+/* Pin the Moment — one shared stage for all three steps.
    Palette merges the three studies: grayscale surfaces, one accent for keyboard focus. */
 :root{
   --bg:#e9e9eb;

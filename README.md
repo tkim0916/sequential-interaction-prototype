@@ -6,7 +6,7 @@ Codebase for sequential interaction project in IXD 107-03, working with Claude C
 
 https://tkim0916.github.io/sequential-interaction-prototype/
 
-## Capture & Pin — sequence prototype
+## Pin the Moment — sequence prototype
 
 `docs/` holds the published prototype, built from the three studies in `photo-studies/`. **Concept:** capture a moment and pin that photo on the wall.
 

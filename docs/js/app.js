@@ -1,4 +1,4 @@
-/* Capture & Pin — a sequence built from the three photo studies.
+/* Pin the Moment — a sequence built from the three photo studies.
    Step 0  Film choice          click Color or Black & white film; nothing else unlocks until you choose
    Step 1  Silky Frame Reveal   pinch / scroll / + opens the viewfinder
    Step 2  Sharp Shutter        zoom, set ISO / shutter / aperture, tap the shutter; photos go to the gallery
@@ -885,7 +885,7 @@ function promptText(){
       return it.label.toLowerCase()+' '+fmt(it,v);
     }).join(', ');
   });
-  return 'In the Capture & Pin prototype (docs/js/app.js), set the Step 2 (Sharp Shutter) background parameters to these values and make them the new defaults in the control panel (the DEF object):\n'+
+  return 'In the Pin the Moment prototype (docs/js/app.js), set the Step 2 (Sharp Shutter) background parameters to these values and make them the new defaults in the control panel (the DEF object):\n'+
     lines.join('\n')+'\n\nDEF = '+JSON.stringify(prm);
 }
 copyBtn.addEventListener('click',function(){
