@@ -22,7 +22,7 @@ https://tkim0916.github.io/sequential-interaction-prototype/
    - Each photo can be **pinned** or **deleted** (tap twice to confirm).
    - A **Film** switch changes Color or B&W for the next photos.
    - **View wall** shows everything pinned so far. Tap any pinned photo (in the gallery or on the wall) to see it full size.
-5. **Pin to the wall** (Study 03, Magnet Wall). Pinning a photo carries it to the wall in the white magnetic hand. Drag it up to pin it, or use the arrow keys and Enter. You then return to the camera.
+5. **Pin to the wall** (Study 03, Magnet Wall). Pinning a photo carries it to the wall in the white magnetic hand. Drag it up to pin it, or use the arrow keys and Enter. You then return to the gallery, where the photo you just pinned is highlighted.
 
 A hint bar at the top of the stage shows the action needed to move on. Each hint disappears once that action has been done, and after the whole tutorial (open, zoom, shoot, open the gallery, view a photo, pin one) no hints appear. This is remembered in the browser, and **Show tips again** in the camera panel brings the hints back.
 

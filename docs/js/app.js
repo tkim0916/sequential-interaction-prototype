@@ -562,7 +562,7 @@ function openGallery(){
   $('galClose').focus({preventScroll:true});
 }
 function closeGallery(back){
-  galOpen=false;gal.hidden=true;lb.hidden=true;
+  galOpen=false;gal.hidden=true;lb.hidden=true;afterLb=null;
   if(back!==false&&step===2){setStatus(camState==='idle'?readyText():statusEl.textContent);camHint();(photos.length?galBtn:shutter).focus({preventScroll:true})}
 }
 galBtn.addEventListener('click',openGallery);
@@ -587,7 +587,11 @@ function closeLightbox(){
   learn('swipe');
   lb.classList.remove('open');
   lbFig.style.transition='transform .25s ease-in';lbFig.style.transform='translateY(110vh)';
-  setTimeout(function(){lb.hidden=true;lbFig.style.transform='';if(lbFrom&&document.body.contains(lbFrom))lbFrom.focus({preventScroll:true})},RM?0:250);
+  setTimeout(function(){
+    lb.hidden=true;lbFig.style.transform='';
+    if(afterLb!==null){var id=afterLb;afterLb=null;backToGallery(id);return}
+    if(lbFrom&&document.body.contains(lbFrom))lbFrom.focus({preventScroll:true});
+  },RM?0:250);
   setStatus(step===3?'Your wall':'Gallery · tap a photo to view it, pin it to the wall, or delete it');
 }
 lbFig.addEventListener('pointerdown',function(e){
@@ -672,6 +676,7 @@ function wallCount(){var n=photos.filter(function(p){return p.wall}).length;retu
 function spawn(){
   linesEl.style.opacity=1;
   hc.innerHTML=frame+render(pinPhoto);
+  held.style.pointerEvents='';
   held.setAttribute('aria-label','Photograph '+pinPhoto.id+'. Drag it onto the wall, or use the arrow keys to move it and Enter to pin it. Enter without moving pins it in the next spot.');
   setCount(wallCount());
   setStatus('Drag the photograph to the wall and let go to pin it');
@@ -687,13 +692,25 @@ function pin(tx,ty){
   var pn=g.querySelector('.pn');
   tween(RM?1:260,function(k){pn.setAttribute('transform','translate(0 '+(-60-(1-k)*16)+') scale('+(1+(1-k)*0.7)+')')});
   held.style.opacity=0;linesEl.style.opacity=0;
+  held.style.pointerEvents='none'; /* the empty hand copy sits on top of the new print; let clicks through to it */
+  held.setAttribute('tabindex','-1');
   g.setAttribute('class','pin-photo');g.setAttribute('data-id',pinPhoto.id);
-  g.setAttribute('role','button');g.setAttribute('aria-label','View pinned photo '+pinPhoto.id+' full size');
+  g.setAttribute('role','button');g.setAttribute('aria-label','View pinned photo '+pinPhoto.id+' full size');g.setAttribute('tabindex','0');
   pinPhoto.wall=g;pinCount++;
   setCount(wallCount());
   learn('pin');
-  setStatus('Pinned to the wall · back to the camera');setHint('');
-  later(1300,function(){goStep(2)});
+  setStatus('Pinned to the wall · back to your gallery');setHint('');
+  var just=pinPhoto.id;
+  later(1300,function(){ /* back to the gallery so every photo is in view (waits if a photo is open full size) */
+    if(!lb.hidden){afterLb=just;return}
+    backToGallery(just);
+  });
+}
+var afterLb=null;
+function backToGallery(id){
+  wallMode='view';goStep(2);openGallery();
+  var it=galGrid.querySelector('[data-id="'+id+'"]');
+  if(it){it.classList.add('just');it.scrollIntoView({block:'nearest'});setTimeout(function(){it.classList.remove('just')},1600)}
 }
 function snapBack(x0,y0,r0){
   tween(260,function(k){setHeld(x0+(HX-x0)*k,y0+(HY-y0)*k,r0*(1-k),1.06-0.06*k,8-5*k)},function(){busy=false});
@@ -915,8 +932,8 @@ function goStep(n){
   shutter.setAttribute('tabindex',n===2?'0':'-1');
   held.setAttribute('tabindex',n===3&&wallMode==='pin'?'0':'-1');
   setHint(n===1?'Pinch out with two fingers, scroll up, or press + to open the camera':'','open');
-  pinned.querySelectorAll('.pin-photo').forEach(function(g){g.setAttribute('tabindex',n===3&&wallMode==='view'?'0':'-1')});
-  pinned.classList.toggle('viewing',n===3&&wallMode==='view');
+  pinned.querySelectorAll('.pin-photo').forEach(function(g){g.setAttribute('tabindex',n===3?'0':'-1')});
+  pinned.classList.toggle('viewing',n===3);
   held.style.pointerEvents=n===3&&wallMode==='pin'?'':'none';
   if(n===0){
     setCount('Choose film');
@@ -964,7 +981,7 @@ $('restart').addEventListener('click',restart);
 moreBtn.addEventListener('click',function(){learn('wall');goStep(2)});
 /* on the wall (View wall), a pinned photo opens full size like in the gallery */
 function wallPhoto(e){
-  if(step!==3||wallMode!=='view')return null;
+  if(step!==3||drag)return null;
   var g=e.target.closest&&e.target.closest('.pin-photo');if(!g)return null;
   var id=+g.getAttribute('data-id');return {g:g,p:photos.filter(function(x){return x.id===id})[0]};
 }

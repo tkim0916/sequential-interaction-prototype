@@ -297,3 +297,5 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 #pinned.viewing .pin-photo:hover{filter:brightness(1.04)}
 .pin-photo{outline:none}
 .pin-photo:focus-visible>rect:first-child{stroke:var(--accent);stroke-width:4}
+.gitem.just>.gphoto>svg{animation:justpinned 1.6s ease-out}
+@keyframes justpinned{0%{transform:scale(1.06);filter:drop-shadow(0 0 0 var(--accent)) drop-shadow(0 0 10px var(--accent))}100%{transform:none}}
