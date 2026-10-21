@@ -907,7 +907,7 @@ function setPanel(open){
 }
 panelToggle.addEventListener('click',function(){setPanel(panel.classList.contains('collapsed'))});
 buildPanel();
-setPanel(window.matchMedia('(min-width: 1100px)').matches);
+setPanel(false); /* background controls start collapsed; the tab opens them */
 
 /* ------------------------------------------------------------------ */
 /* Sequence                                                            */
